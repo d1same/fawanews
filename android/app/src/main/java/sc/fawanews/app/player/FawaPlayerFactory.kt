@@ -1,6 +1,9 @@
 package sc.fawanews.app.player
 
 import android.content.Context
+import androidx.media3.common.C
+import androidx.media3.common.TrackGroup
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -11,11 +14,6 @@ import sc.fawanews.app.data.StreamRequestHeaders
 
 @UnstableApi
 object FawaPlayerFactory {
-
-    /** QHD / 2K target for TV (2560×1440). Phone uses adaptive defaults. */
-    private const val TV_MAX_WIDTH = 2560
-    private const val TV_MAX_HEIGHT = 1440
-    private const val TV_MAX_BITRATE = 20_000_000
 
     fun create(context: Context, preferTvQuality: Boolean = false): ExoPlayer {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -28,9 +26,6 @@ object FawaPlayerFactory {
             parameters = buildUponParameters()
                 .apply {
                     if (preferTvQuality) {
-                        setViewportSize(TV_MAX_WIDTH, TV_MAX_HEIGHT, true)
-                        setMaxVideoSize(TV_MAX_WIDTH, TV_MAX_HEIGHT)
-                        setMaxVideoBitrate(TV_MAX_BITRATE)
                         setForceHighestSupportedBitrate(true)
                     }
                 }
@@ -54,4 +49,40 @@ object FawaPlayerFactory {
             .setLoadControl(loadControl)
             .build()
     }
+}
+
+/** Pick the sharpest video track the TV can play. Phone playback stays adaptive. */
+@UnstableApi
+fun ExoPlayer.preferHighestVideo() {
+    var bestGroup: TrackGroup? = null
+    var bestIndex = -1
+    var bestPixels = -1
+    var bestBitrate = -1
+    for (group in currentTracks.groups) {
+        if (group.type != C.TRACK_TYPE_VIDEO) continue
+        for (index in 0 until group.length) {
+            if (!group.isTrackSupported(index, false)) continue
+            val format = group.getTrackFormat(index)
+            val pixels = format.width.coerceAtLeast(0) * format.height.coerceAtLeast(0)
+            val bitrate = format.bitrate.coerceAtLeast(0)
+            val sharper = pixels > bestPixels || (pixels == bestPixels && bitrate > bestBitrate)
+            if (sharper && (pixels > 0 || bitrate > 0)) {
+                bestPixels = pixels
+                bestBitrate = bitrate
+                bestGroup = group.mediaTrackGroup
+                bestIndex = index
+            }
+        }
+    }
+    val group = bestGroup ?: return
+    if (bestIndex < 0) return
+    val already = trackSelectionParameters.overrides[group]
+    if (already != null && already.trackIndices.size == 1 && already.trackIndices[0] == bestIndex) {
+        return
+    }
+    trackSelectionParameters = trackSelectionParameters
+        .buildUpon()
+        .setForceHighestSupportedBitrate(true)
+        .setOverrideForType(TrackSelectionOverride(group, bestIndex))
+        .build()
 }

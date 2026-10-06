@@ -37,6 +37,7 @@ import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -99,9 +100,14 @@ fun NativePlayer(
 
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
+            override fun onTracksChanged(tracks: Tracks) {
+                if (preferTvQuality) exoPlayer.preferHighestVideo()
+            }
+
             override fun onPlaybackStateChanged(state: Int) {
                 playbackState = state
                 if (state == Player.STATE_READY) {
+                    if (preferTvQuality) exoPlayer.preferHighestVideo()
                     onPlayerReady(exoPlayer.videoFormat?.qualityLabel())
                 }
             }
