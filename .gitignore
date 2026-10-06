@@ -1,0 +1,18 @@
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Secrets
+**/.env
+**/credentials.json
+
+# Screenshots / temp
+screenshots/

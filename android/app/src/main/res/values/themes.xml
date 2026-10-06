@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FawaNews" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+    </style>
+    <style name="Theme.FawaNews.Tv" parent="Theme.FawaNews">
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+    </style>
+</resources>

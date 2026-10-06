@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FawaNews</string>
+    <string name="schedule_title">Live schedule</string>
+    <string name="news_title">Sports news</string>
+    <string name="refresh">Refresh</string>
+    <string name="back">Back</string>
+    <string name="loading">Loading…</string>
+    <string name="error_load">Could not load schedule. Check your connection and try again.</string>
+    <string name="no_stream">No stream found for this item.</string>
+    <string name="domain_notice">Official site: fawanews.sc — other apps using this name are not affiliated.</string>
+    <string name="live_badge">LIVE</string>
+    <string name="read_article">Read article</string>
+    <string name="article_empty">No article text on this page.</string>
+    <string name="article_back_hint">Press Back on your remote to return to the list.</string>
+    <string name="article_load_error">Could not load this article.</string>
+    <string name="menu_live">Live</string>
+    <string name="menu_news">News</string>
+    <string name="menu_scores">Scores</string>
+    <string name="scores_source_note">Scores from ESPN · refreshes automatically</string>
+    <string name="scores_empty">No games listed for this league today.</string>
+    <string name="menu_title">Menu</string>
+    <string name="menu_sports">Sport</string>
+    <string name="menu_leagues">Leagues</string>
+    <string name="updated_ago">Updated %1$s · auto-refresh on</string>
+    <string name="empty_live">No live games in this filter. Try All or refresh.</string>
+    <string name="empty_news">No news items right now.</string>
+    <string name="refresh_stream">Refresh stream</string>
+    <string name="stream_option">Source %1$d</string>
+    <string name="player_hint">Tap video for play/pause · Settings = quality</string>
+    <string name="player_hint_tv">D-pad OK = play/pause · Settings up to 2K</string>
+    <string name="stream_waiting_body">No stream link yet. Tap Refresh stream to pull a new link.</string>
+    <string name="select_quality">Video quality</string>
+    <string name="open_menu">Open menu</string>
+    <string name="filter_active">Filter: %1$s</string>
+    <string name="search">Search</string>
+    <string name="search_hint">Search teams, leagues, news…</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_empty">No matches. Try another name or clear search.</string>
+    <string name="search_voice">Voice search</string>
+    <string name="voice_permission_denied">Microphone permission is needed for voice search.</string>
+    <string name="voice_not_available">Voice search isn\'t available on this device. Type instead.</string>
+</resources>
