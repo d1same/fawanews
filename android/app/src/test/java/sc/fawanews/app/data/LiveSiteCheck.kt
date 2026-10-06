@@ -26,7 +26,15 @@ class LiveSiteCheck {
 
         val repository = FawaRepository()
         val client = FawaRepository.defaultClient()
-        val games = runBlocking { repository.fetchSchedule() }.filter { it.isLive }
+        val schedule = runCatching { runBlocking { repository.fetchSchedule() } }
+        val games = schedule.getOrDefault(emptyList()).filter { it.isLive }
+        if (games.isEmpty()) {
+            val why = schedule.exceptionOrNull()?.let { "the site did not load: ${it.message}" }
+                ?: "the homepage loaded but no games were found, so its layout probably changed"
+            File("build/live-site-report.md").apply { parentFile?.mkdirs() }
+                .writeText("## Live site check\n\nNo live games: $why.\n")
+            fail("No live games: $why")
+        }
         val missed = mutableListOf<String>()
         val rows = mutableListOf<String>()
 
