@@ -52,9 +52,19 @@ foreach ($page in $pages) {
     if ($page -in @("index.html", "contact.html", "privacy_policy.html")) { continue }
     $pageUrl = $base + ($page -replace ' ', '%20')
     $p = Get-Text $pageUrl 400000
-    $m = [regex]::Match($p.Body, 'var\s+videos\s*=\s*(\[[^\]]*\])', 'IgnoreCase')
-    if (-not $m.Success) { continue }
-    $urls = [regex]::Matches($m.Groups[1].Value, 'https?://[^"''\s,\]]+') | ForEach-Object { $_.Value }
+    $arrays = [regex]::Matches($p.Body, 'var\s+videos\w*\s*=\s*(\[[^\]]*\])', 'IgnoreCase')
+    if ($arrays.Count -eq 0) {
+        if ($p.Body -match 'm3u8') { Write-Output "$page | NO videos array but page mentions m3u8" }
+        continue
+    }
+    $urls = $arrays | ForEach-Object { [regex]::Matches($_.Groups[1].Value, 'https?://[^"''\s,\]]+') | ForEach-Object { $_.Value } } | Select-Object -Unique
+    if (-not $urls) {
+        # Split links: var p1 = "http://.../hls/"; var p2 = "name"; var p3 = ".m3u8"; [p1 + p2 + p3]
+        $scriptStart = $p.Body.LastIndexOf("<script", $arrays[0].Index)
+        $declared = $p.Body.Substring($scriptStart, $arrays[0].Index - $scriptStart)
+        $joined = ([regex]::Matches($declared, 'var\s+\w+\s*=\s*["'']([^"'']*)["'']') | ForEach-Object { $_.Groups[1].Value }) -join ""
+        if ($joined -match '^https?://') { $urls = @($joined) } else { Write-Output "$page | videos array is empty"; continue }
+    }
     $n = 0
     foreach ($u in $urls) {
         $n++

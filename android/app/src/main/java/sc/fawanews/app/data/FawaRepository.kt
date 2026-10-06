@@ -73,6 +73,10 @@ class FawaRepository(
         private val videoArrayRegex =
             Regex("""var\s+videos\w*\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
 
+        // Links can also be built from pieces: `var p1 = "http://..."; ... [p1 + p2 + p3]`.
+        private val stringVarRegex = Regex("""var\s+(\w+)\s*=\s*(["'])(.*?)\2""")
+        private val quotedRegex = Regex("""(["'])(.*)\1""")
+
         private val playlistUrlRegex =
             Regex("""https?://[^"'\s<>]+\.m3u8[^"'\s<>]*""", RegexOption.IGNORE_CASE)
 
@@ -194,25 +198,46 @@ class FawaRepository(
         }
 
         fun parseVideoUrls(html: String): List<String> {
-            val fromArrays = videoArrayRegex.findAll(html)
-                .flatMap { match -> parseUrlArray(match.groupValues[1]) }
-                .toList()
+            val fromArrays = mutableListOf<String>()
+            var previousEnd = 0
+            for (match in videoArrayRegex.findAll(html)) {
+                val scriptStart = html.lastIndexOf("<script", match.range.first, ignoreCase = true)
+                val declarations = html.substring(maxOf(scriptStart, previousEnd, 0), match.range.first)
+                fromArrays += parseUrlArray(match.groupValues[1], declarations)
+                previousEnd = match.range.last + 1
+            }
             val urls = fromArrays.ifEmpty {
                 playlistUrlRegex.findAll(html).map { it.value }.toList()
             }
             return urls.distinct()
         }
 
-        private fun parseUrlArray(jsonArray: String): List<String> =
+        private fun parseUrlArray(array: String, declarations: String): List<String> =
             runCatching {
-                Json.decodeFromString<List<String>>(jsonArray)
+                Json.decodeFromString<List<String>>(array)
             }.getOrElse {
-                jsonArray
+                val strings = stringVarRegex.findAll(declarations)
+                    .map { it.groupValues[1] to it.groupValues[3] }
+                    .toList()
+                array
                     .removePrefix("[")
                     .removeSuffix("]")
                     .split(",")
-                    .map { it.trim().trim('"', '\'') }
+                    .mapNotNull { joinUrlParts(it, strings) }
             }.filter { it.startsWith("http") }
+
+        private fun joinUrlParts(expression: String, strings: List<Pair<String, String>>): String? {
+            val values = strings.toMap()
+            val parts = expression.split("+").map { it.trim() }.filter { it.isNotEmpty() }
+            val joined = parts.map { part -> quotedRegex.matchEntire(part)?.groupValues?.get(2) ?: values[part] }
+            if (joined.isNotEmpty() && joined.all { it != null }) {
+                val url = joined.joinToString("")
+                if (url.startsWith("http")) return url
+            }
+            // Some pages assign `p1` three times instead of p1/p2/p3. Browsers fail there,
+            // but the pieces are still declared in order.
+            return strings.joinToString("") { it.second }.takeIf { it.startsWith("http") }
+        }
 
         fun resolveUrl(base: String, path: String): String {
             if (path.startsWith("http", ignoreCase = true)) return path
