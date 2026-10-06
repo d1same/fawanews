@@ -51,11 +51,12 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- No screenOrientation here: phones and TVs share this activity, and aliases cannot
+             override it. MainActivity picks portrait or landscape before the first frame. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:resizeableActivity="true"
-            android:screenOrientation="sensorLandscape"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize" />
 
@@ -63,7 +64,6 @@
         <activity-alias
             android:name=".PhoneLauncher"
             android:exported="true"
-            android:screenOrientation="portrait"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -74,7 +74,6 @@
         <activity-alias
             android:name=".TvLauncher"
             android:exported="true"
-            android:screenOrientation="sensorLandscape"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
