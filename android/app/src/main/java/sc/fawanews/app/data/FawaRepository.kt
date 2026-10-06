@@ -71,11 +71,15 @@ class FawaRepository(
     companion object {
         const val BASE_URL = "http://www.fawanews.sc/"
 
-        // The site has used `var videos`, `var videos_1`, and `var videosv`.
-        private val videoArrayRegex =
-            Regex("""var\s+videos\w*\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
+        // The site keeps renaming the link list (`videos`, `videos_1`, `videosv`, `looo`),
+        // so follow whichever array the player reads: `source: looo[...]`.
+        private val arrayVarRegex = Regex("""var\s+(\w+)\s*=\s*(\[[^\]]*])""")
+        private val playerSourceRegex = Regex("""source\s*:\s*(\w+)\s*\[""")
+        private val mediaUrlRegex = Regex("""\.(m3u8|mpd|mp4)(\?|$)""", RegexOption.IGNORE_CASE)
+        private val pushRegex = Regex("""(\w+)\.push\(([^)]*)\)""")
+        private val indexedRegex = Regex("""(\w+)\[\s*\w+\s*]""")
 
-        // Links can also be built from pieces: `var p1 = "http://..."; ... [p1 + p2 + p3]`.
+        // Links can also be built from pieces: `var g1 = "http://..."; ... [g1 + g2 + g3]`.
         private val stringVarRegex = Regex("""var\s+(\w+)\s*=\s*(["'])(.*?)\2""")
         private val quotedRegex = Regex("""(["'])(.*)\1""")
 
@@ -199,20 +203,54 @@ class FawaRepository(
             )
         }
 
-        fun parseVideoUrls(html: String): List<String> {
-            val fromArrays = mutableListOf<String>()
+        fun parseVideoUrls(html: String): List<String> =
+            (PageScriptRunner.findStreamUrls(html) + parseVideoUrlsByPattern(html)).distinct()
+
+        // Still needed when the page's own script is broken, e.g. `p1` assigned three times.
+        private fun parseVideoUrlsByPattern(html: String): List<String> {
+            val sourceNames = playerSourceRegex.findAll(html).map { it.groupValues[1] }.toSet()
+            val arrays = mutableListOf<Pair<String, List<String>>>()
             var previousEnd = 0
-            for (match in videoArrayRegex.findAll(html)) {
+            for (match in arrayVarRegex.findAll(html)) {
                 val scriptStart = html.lastIndexOf("<script", match.range.first, ignoreCase = true)
                 val declarations = html.substring(maxOf(scriptStart, previousEnd, 0), match.range.first)
-                fromArrays += parseUrlArray(match.groupValues[1], declarations)
+                arrays += match.groupValues[1] to parseUrlArray(match.groupValues[2], declarations)
                 previousEnd = match.range.last + 1
+            }
+            val fromPlayer = arrays
+                .filter { (name, _) -> name in sourceNames || name.startsWith("videos", ignoreCase = true) }
+                .flatMap { it.second } + expandPushes(html, sourceNames, arrays.toMap())
+            val fromArrays = fromPlayer.ifEmpty {
+                arrays.flatMap { it.second }.filter { mediaUrlRegex.containsMatchIn(it) }
             }
             val urls = fromArrays.ifEmpty {
                 playlistUrlRegex.findAll(html).map { it.value }.toList()
             }
             return urls.distinct()
         }
+
+        /** Lists filled in a loop: `for (...) looo.push(S1[i] + S2 + S3)` with S1 an array of hosts. */
+        private fun expandPushes(
+            html: String,
+            sourceNames: Set<String>,
+            arrays: Map<String, List<String>>,
+        ): List<String> = pushRegex.findAll(html)
+            .filter { it.groupValues[1] in sourceNames }
+            .flatMap { match ->
+                val scriptStart = html.lastIndexOf("<script", match.range.first, ignoreCase = true)
+                val strings = stringVarRegex.findAll(html.substring(maxOf(scriptStart, 0), match.range.first))
+                    .associate { it.groupValues[1] to it.groupValues[3] }
+                val choices = match.groupValues[2].split("+").map { it.trim() }.map { part ->
+                    indexedRegex.matchEntire(part)?.let { arrays[it.groupValues[1]] }
+                        ?: quotedRegex.matchEntire(part)?.let { listOf(it.groupValues[2]) }
+                        ?: strings[part]?.let { listOf(it) }
+                        ?: return@flatMap emptySequence()
+                }
+                choices.fold(listOf("")) { urls, values -> urls.flatMap { url -> values.map { url + it } } }
+                    .asSequence()
+            }
+            .filter { it.startsWith("http") }
+            .toList()
 
         private fun parseUrlArray(array: String, declarations: String): List<String> =
             runCatching {
@@ -265,10 +303,13 @@ class FawaRepository(
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return LinkCheck.DEAD
                     val snippet = response.body?.string()?.take(8192).orEmpty()
-                    val isPlaylist = snippet.startsWith("#EXTM3U") ||
-                        snippet.contains("#EXT-X-STREAM-INF") ||
-                        snippet.contains("#EXTINF")
-                    if (isPlaylist) LinkCheck.WORKING else LinkCheck.UNKNOWN
+                    val hasVideo = snippet.contains("#EXT-X-STREAM-INF") || snippet.contains("#EXTINF")
+                    when {
+                        hasVideo -> LinkCheck.WORKING
+                        // Before kickoff some hosts serve a bare `#EXTM3U` with nothing to play.
+                        snippet.trimStart().startsWith("#EXTM3U") -> LinkCheck.DEAD
+                        else -> LinkCheck.UNKNOWN
+                    }
                 }
             }.getOrDefault(LinkCheck.UNKNOWN)
         }

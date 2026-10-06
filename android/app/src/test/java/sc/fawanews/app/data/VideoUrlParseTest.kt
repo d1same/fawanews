@@ -78,6 +78,63 @@ class VideoUrlParseTest {
     }
 
     @Test
+    fun followsWhateverArrayThePlayerReads() {
+        val html = """
+            <script>var banners = ["http://ads.example/banner.jpg"];</script>
+            <script type="text/javascript">
+                var g1 = "http://193.47.62.55/hls/";
+                var g2 = "roooaaa";
+                var g3 = ".m3u8";
+
+                var looo = [g1 + g2 + g3];
+            </script>
+            <script type='text/javascript'>
+                var player = new Clappr.Player({
+                    source: looo[Math.floor(Math.random() * looo.length)],
+                    parentId: '#player',
+                });
+            </script>
+        """.trimIndent()
+        assertEquals(listOf("http://193.47.62.55/hls/roooaaa.m3u8"), FawaRepository.parseVideoUrls(html))
+    }
+
+    @Test
+    fun expandsListFilledInALoop() {
+        val html = """
+            <script type="text/javascript">
+                var S1 = [
+                    "http://193.47.62.59/hls/",
+                    "http://193.47.62.50/hls/"
+                ];
+
+                var S2 = "HUHUHU";
+                var S3 = ".m3u8";
+
+                var looo = [];
+                for (var i = 0; i < S1.length; i++) {
+                    looo.push(S1[i] + S2 + S3);
+                }
+            </script>
+            <script type='text/javascript'>
+                var player = new Clappr.Player({ source: looo[Math.floor(Math.random() * looo.length)] });
+            </script>
+        """.trimIndent()
+        assertEquals(
+            listOf("http://193.47.62.59/hls/HUHUHU.m3u8", "http://193.47.62.50/hls/HUHUHU.m3u8"),
+            FawaRepository.parseVideoUrls(html),
+        )
+    }
+
+    @Test
+    fun findsRenamedPlaylistArrayWithoutPlayerHint() {
+        val html = """
+            <script>var banners = ["http://ads.example/banner.jpg"];</script>
+            <script>var zz = ["http://193.47.62.41/hls/DBBBQQQ.m3u8"];</script>
+        """.trimIndent()
+        assertEquals(listOf("http://193.47.62.41/hls/DBBBQQQ.m3u8"), FawaRepository.parseVideoUrls(html))
+    }
+
+    @Test
     fun fallsBackToAnyPlaylistLink() {
         val html = """new Clappr.Player({ source: "https://live.example/master.m3u8?token=1" });"""
         assertEquals(listOf("https://live.example/master.m3u8?token=1"), FawaRepository.parseVideoUrls(html))

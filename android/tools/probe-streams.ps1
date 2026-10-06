@@ -52,12 +52,15 @@ foreach ($page in $pages) {
     if ($page -in @("index.html", "contact.html", "privacy_policy.html")) { continue }
     $pageUrl = $base + ($page -replace ' ', '%20')
     $p = Get-Text $pageUrl 400000
-    $arrays = [regex]::Matches($p.Body, 'var\s+videos\w*\s*=\s*(\[[^\]]*\])', 'IgnoreCase')
+    # Follow whichever array the player reads (the site keeps renaming it).
+    $sourceNames = [regex]::Matches($p.Body, 'source\s*:\s*(\w+)\s*\[') | ForEach-Object { $_.Groups[1].Value }
+    $arrays = @([regex]::Matches($p.Body, 'var\s+(\w+)\s*=\s*(\[[^\]]*\])') |
+        Where-Object { $_.Groups[1].Value -in $sourceNames -or $_.Groups[1].Value -like 'videos*' })
     if ($arrays.Count -eq 0) {
-        if ($p.Body -match 'm3u8') { Write-Output "$page | NO videos array but page mentions m3u8" }
+        if ($p.Body -match 'm3u8') { Write-Output "$page | NO player array but page mentions m3u8" }
         continue
     }
-    $urls = $arrays | ForEach-Object { [regex]::Matches($_.Groups[1].Value, 'https?://[^"''\s,\]]+') | ForEach-Object { $_.Value } } | Select-Object -Unique
+    $urls = $arrays | ForEach-Object { [regex]::Matches($_.Groups[2].Value, 'https?://[^"''\s,\]]+') | ForEach-Object { $_.Value } } | Select-Object -Unique
     if (-not $urls) {
         # Split links: var p1 = "http://.../hls/"; var p2 = "name"; var p3 = ".m3u8"; [p1 + p2 + p3]
         $scriptStart = $p.Body.LastIndexOf("<script", $arrays[0].Index)

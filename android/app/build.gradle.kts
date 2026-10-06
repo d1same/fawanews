@@ -13,8 +13,8 @@ android {
         applicationId = "sc.fawanews.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.0.15"
+        versionCode = 17
+        versionName = "1.0.16"
     }
 
     buildTypes {
@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.ui)
     implementation(libs.okhttp)
+    implementation(libs.rhino)
     implementation(libs.jsoup)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
