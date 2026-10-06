@@ -51,7 +51,7 @@ class FawaViewModel(
         val player = _playerState.value
         if (player?.pagePath != null && player.isLiveEvent) {
             refreshPlayerStream(showOverlay = false)
-            if (player.playback != StreamPlayback.COMING_SOON) startStreamAutoRefresh()
+            startStreamAutoRefresh()
         }
     }
 
@@ -273,10 +273,7 @@ class FawaViewModel(
                 playback = StreamPlayback.LOADING,
             )
             loadStreamsForPlayer(preserveIndex = false, showRefreshing = false)
-            val state = _playerState.value
-            if (state?.isLiveEvent == true && state.playback != StreamPlayback.COMING_SOON) {
-                startStreamAutoRefresh()
-            }
+            if (_playerState.value?.isLiveEvent == true) startStreamAutoRefresh()
         }
     }
 
@@ -546,10 +543,10 @@ class FawaViewModel(
         streamRefreshJob?.cancel()
         streamRefreshJob = viewModelScope.launch {
             while (isActive) {
-                delay(STREAM_REFRESH_MS)
-                if (_playerState.value?.pagePath != null &&
-                    _playerState.value?.playback != StreamPlayback.COMING_SOON
-                ) {
+                // Links usually appear right at kickoff, so a waiting game checks more often.
+                val waiting = _playerState.value?.playback == StreamPlayback.COMING_SOON
+                delay(if (waiting) WAITING_FOR_LINK_MS else STREAM_REFRESH_MS)
+                if (_playerState.value?.pagePath != null) {
                     refreshPlayerStream(showOverlay = false)
                 }
             }
@@ -631,6 +628,7 @@ class FawaViewModel(
     companion object {
         private const val SCHEDULE_REFRESH_MS = 3 * 60 * 1000L
         private const val STREAM_REFRESH_MS = 2 * 60 * 1000L
+        private const val WAITING_FOR_LINK_MS = 30 * 1000L
         private const val RELINK_AFTER_ERROR_MS = 20 * 1000L
         private const val SCORES_REFRESH_MS = 90 * 1000L
     }

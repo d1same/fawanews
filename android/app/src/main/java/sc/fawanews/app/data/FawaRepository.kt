@@ -40,9 +40,11 @@ class FawaRepository(
     }
 
     fun validateStreams(urls: List<String>): List<String> {
-        val distinct = urls.distinct()
-        val probed = distinct.filter { url -> probeStream(url, client) }
-        return probed.ifEmpty { distinct }
+        val checks = urls.distinct().associateWith { url -> checkStream(url, client) }
+        val working = checks.filterValues { it == LinkCheck.WORKING }.keys.toList()
+        // A link the server refuses (404, "channel stopped") is not live yet or is over.
+        // Only links we could not judge, such as a timeout, are worth handing to the player.
+        return working.ifEmpty { checks.filterValues { it == LinkCheck.UNKNOWN }.keys.toList() }
     }
 
     private fun getHtml(url: String): String {
@@ -69,7 +71,7 @@ class FawaRepository(
     companion object {
         const val BASE_URL = "http://www.fawanews.sc/"
 
-        // The site has used both `var videos = [...]` and `var videos_1 = [...]`.
+        // The site has used `var videos`, `var videos_1`, and `var videosv`.
         private val videoArrayRegex =
             Regex("""var\s+videos\w*\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
 
@@ -248,7 +250,10 @@ class FawaRepository(
             return URI(base).resolve(encodedPath).toASCIIString()
         }
 
-        fun probeStream(url: String, client: OkHttpClient = defaultClient()): Boolean {
+        fun probeStream(url: String, client: OkHttpClient = defaultClient()): Boolean =
+            checkStream(url, client) == LinkCheck.WORKING
+
+        fun checkStream(url: String, client: OkHttpClient = defaultClient()): LinkCheck {
             val request = Request.Builder()
                 .url(url)
                 .get()
@@ -258,13 +263,16 @@ class FawaRepository(
                 .build()
             return runCatching {
                 client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return false
+                    if (!response.isSuccessful) return LinkCheck.DEAD
                     val snippet = response.body?.string()?.take(8192).orEmpty()
-                    snippet.startsWith("#EXTM3U") ||
+                    val isPlaylist = snippet.startsWith("#EXTM3U") ||
                         snippet.contains("#EXT-X-STREAM-INF") ||
                         snippet.contains("#EXTINF")
+                    if (isPlaylist) LinkCheck.WORKING else LinkCheck.UNKNOWN
                 }
-            }.getOrDefault(false)
+            }.getOrDefault(LinkCheck.UNKNOWN)
         }
     }
+
+    enum class LinkCheck { WORKING, DEAD, UNKNOWN }
 }

@@ -20,6 +20,12 @@ class VideoUrlParseTest {
     }
 
     @Test
+    fun readsLetterSuffixVideosArray() {
+        val html = """var videosv =  ["http://193.47.62.55/hls/f333QQQQ.m3u8"];"""
+        assertEquals(listOf("http://193.47.62.55/hls/f333QQQQ.m3u8"), FawaRepository.parseVideoUrls(html))
+    }
+
+    @Test
     fun readsEveryNumberedArray() {
         val html = """
             var videos_1 = ["http://a.example/one.m3u8"];

@@ -36,7 +36,7 @@
     <string name="stream_option">Source %1$d</string>
     <string name="player_hint">Tap video for play/pause · Settings = quality</string>
     <string name="player_hint_tv">D-pad OK = play/pause · Settings up to 2K</string>
-    <string name="stream_waiting_body">No stream link yet. Tap Refresh stream to pull a new link.</string>
+    <string name="stream_waiting_body">No stream link yet. It will start on its own once the game goes live.</string>
     <string name="select_quality">Video quality</string>
     <string name="open_menu">Open menu</string>
     <string name="filter_active">Filter: %1$s</string>
