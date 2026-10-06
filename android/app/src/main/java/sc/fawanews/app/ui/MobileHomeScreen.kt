@@ -52,7 +52,7 @@ fun MobileHomeScreen(
     onScoresRefresh: () -> Unit,
     onTabSelect: (HomeTab) -> Unit,
     onCategorySelect: (String?) -> Unit,
-    onScoreLeagueSelect: (sc.fawanews.app.data.ScoreLeague) -> Unit,
+    onScoreLeagueSelect: (String?) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onItemClick: (ScheduleItem) -> Unit,
 ) {
@@ -78,6 +78,7 @@ fun MobileHomeScreen(
                 liveCategories = state.liveCategories,
                 selectedCategory = state.selectedCategory,
                 selectedScoreLeague = scoresState.selectedLeague,
+                scoreLeagues = scoresState.leagues,
                 onTabSelect = onTabSelect,
                 onCategorySelect = onCategorySelect,
                 onScoreLeagueSelect = onScoreLeagueSelect,

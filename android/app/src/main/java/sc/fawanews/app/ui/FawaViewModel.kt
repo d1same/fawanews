@@ -13,7 +13,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import sc.fawanews.app.data.FawaRepository
 import sc.fawanews.app.data.ScheduleItem
-import sc.fawanews.app.data.ScoreLeague
 import sc.fawanews.app.data.ScoreRepository
 import sc.fawanews.app.data.filterScheduleBySearch
 import sc.fawanews.app.data.filterScoresBySearch
@@ -86,7 +85,7 @@ class FawaViewModel(
         val request = when (schedule.selectedTab) {
             HomeTab.SCORES -> {
                 val games =
-                    _scoresState.value.games.filterScoresBySearch(schedule.searchQuery)
+                    _scoresState.value.visibleGames(schedule.searchQuery)
                 val id = _scoresState.value.tvLastFocusedGameId
                 if (restore && id != null && games.any { it.id == id }) {
                     TvFocusRequest(TvFocusTarget.RestoreItem, id)
@@ -141,24 +140,39 @@ class FawaViewModel(
         }
     }
 
-    fun selectScoreLeague(league: ScoreLeague) {
+    fun selectScoreLeague(league: String?) {
         _scheduleState.update { it.copy(tvRestoreContentOnMenuRight = false) }
         _scoresState.update { it.copy(selectedLeague = league) }
-        refreshScores(showSpinner = true)
     }
 
     fun refreshScores(showSpinner: Boolean = true) {
-        val league = _scoresState.value.selectedLeague
+        val matches = _scheduleState.value.liveItems
         viewModelScope.launch {
             if (showSpinner) {
                 _scoresState.update { it.copy(isLoading = true, error = null) }
             }
-            runCatching { scoreRepository.fetchScores(league) }
+            if (matches.isEmpty()) {
+                _scoresState.update {
+                    it.copy(
+                        isLoading = false,
+                        games = emptyList(),
+                        selectedLeague = null,
+                        lastUpdatedMillis = System.currentTimeMillis(),
+                        error = null,
+                    )
+                }
+                return@launch
+            }
+            runCatching { scoreRepository.fetchScoresForMatches(matches) }
                 .onSuccess { games ->
                     _scoresState.update {
+                        val league = it.selectedLeague?.takeIf { name ->
+                            games.any { game -> game.leagueLabel == name }
+                        }
                         it.copy(
                             isLoading = false,
                             games = games,
+                            selectedLeague = league,
                             lastUpdatedMillis = System.currentTimeMillis(),
                             error = null,
                         )
@@ -404,6 +418,7 @@ class FawaViewModel(
                 error = null,
             )
         }
+        refreshScores(showSpinner = false)
     }
 
     private fun filterLive(
@@ -549,13 +564,21 @@ class FawaViewModel(
     }
 
     data class ScoresUiState(
-        val selectedLeague: ScoreLeague = ScoreLeague.NFL,
+        val selectedLeague: String? = null,
         val games: List<sc.fawanews.app.data.ScoreGame> = emptyList(),
         val isLoading: Boolean = false,
         val lastUpdatedMillis: Long? = null,
         val error: String? = null,
         val tvLastFocusedGameId: String? = null,
-    )
+    ) {
+        val leagues: List<String>
+            get() = games.map { it.leagueLabel }.distinct().sorted()
+
+        fun visibleGames(query: String): List<sc.fawanews.app.data.ScoreGame> =
+            games
+                .filter { selectedLeague == null || it.leagueLabel == selectedLeague }
+                .filterScoresBySearch(query)
+    }
 
     class Factory(
         private val repository: FawaRepository,

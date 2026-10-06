@@ -17,8 +17,8 @@
     <string name="menu_live">Live</string>
     <string name="menu_news">News</string>
     <string name="menu_scores">Scores</string>
-    <string name="scores_source_note">Scores from ESPN · refreshes automatically</string>
-    <string name="scores_empty">No games listed for this league today.</string>
+    <string name="scores_source_note">Today\'s live matches · scores refresh automatically</string>
+    <string name="scores_empty">No matches on the live list right now.</string>
     <string name="menu_title">Menu</string>
     <string name="menu_sports">Sport</string>
     <string name="menu_leagues">Leagues</string>

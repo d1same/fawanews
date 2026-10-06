@@ -28,6 +28,20 @@ class ScoreRepository(
         parseScoreboard(body, league.label)
     }
 
+    /**
+     * Leagues come from today's live list. Each of those leagues gets the full scoreboard,
+     * including games the site is not streaming.
+     */
+    suspend fun fetchScoresForMatches(matches: List<ScheduleItem>): List<ScoreGame> =
+        withContext(Dispatchers.IO) {
+            val unique = dedupeMatchups(matches)
+            val boards = mutableMapOf<ScoreLeague, List<ScoreGame>>()
+            for (league in unique.mapNotNull { ScoreLeague.fromSiteLabel(it.leagueLabel()) }.distinct()) {
+                boards[league] = runCatching { fetchScores(league) }.getOrDefault(emptyList())
+            }
+            scoresForLiveDay(unique, boards)
+        }
+
     private fun getJson(url: String): JsonObject {
         val request = Request.Builder()
             .url(url)

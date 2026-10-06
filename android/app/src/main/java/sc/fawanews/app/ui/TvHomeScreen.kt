@@ -44,8 +44,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sc.fawanews.app.R
 import sc.fawanews.app.data.ScheduleItem
-import sc.fawanews.app.data.ScoreLeague
-import sc.fawanews.app.data.filterScoresBySearch
 import sc.fawanews.app.ui.TvLayout.contentPadding
 import sc.fawanews.app.ui.TvLayout.gridColumns
 import sc.fawanews.app.ui.TvLayout.gridGap
@@ -65,7 +63,7 @@ fun TvHomeScreen(
     onScoresRefresh: () -> Unit,
     onTabSelect: (HomeTab) -> Unit,
     onCategorySelect: (String?) -> Unit,
-    onScoreLeagueSelect: (ScoreLeague) -> Unit,
+    onScoreLeagueSelect: (String?) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onItemClick: (ScheduleItem) -> Unit,
     onTvItemFocused: (String) -> Unit,
@@ -149,8 +147,7 @@ fun TvHomeScreen(
             }
             TvFocusTarget.FirstContentItem -> {
                 if (isScores) {
-                    val scoreGames =
-                        scoresState.games.filterScoresBySearch(state.searchQuery)
+                    val scoreGames = scoresState.visibleGames(state.searchQuery)
                     if (scoreGames.isEmpty() && scoresState.isLoading) {
                         return@LaunchedEffect
                     }
@@ -194,6 +191,7 @@ fun TvHomeScreen(
             categories = state.liveCategories,
             selectedCategory = state.selectedCategory,
             selectedScoreLeague = scoresState.selectedLeague,
+            scoreLeagues = scoresState.leagues,
             onTabSelect = onTabSelect,
             onCategorySelect = onCategorySelect,
             onScoreLeagueSelect = onScoreLeagueSelect,
@@ -346,10 +344,11 @@ private fun TvSideMenu(
     selectedTab: HomeTab,
     categories: List<String>,
     selectedCategory: String?,
-    selectedScoreLeague: ScoreLeague,
+    selectedScoreLeague: String?,
+    scoreLeagues: List<String>,
     onTabSelect: (HomeTab) -> Unit,
     onCategorySelect: (String?) -> Unit,
-    onScoreLeagueSelect: (ScoreLeague) -> Unit,
+    onScoreLeagueSelect: (String?) -> Unit,
     menuFocusFor: (String) -> FocusRequester,
     onMenuFocused: (String) -> Unit,
     onDpadRight: () -> Unit,
@@ -406,10 +405,19 @@ private fun TvSideMenu(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
                 )
-                ScoreLeague.entries.forEach { league ->
-                    val key = TvMenuFocusKeys.scoreLeague(league.name)
+                val allKey = TvMenuFocusKeys.scoreLeague("all")
+                TvMenuItem(
+                    label = "All today",
+                    selected = selectedScoreLeague == null,
+                    onClick = { onScoreLeagueSelect(null) },
+                    modifier = Modifier.focusRequester(menuFocusFor(allKey)),
+                    onDpadRight = onDpadRight,
+                    onFocused = { onMenuFocused(allKey) },
+                )
+                scoreLeagues.forEach { league ->
+                    val key = TvMenuFocusKeys.scoreLeague(league)
                     TvMenuItem(
-                        label = league.label,
+                        label = league,
                         selected = selectedScoreLeague == league,
                         onClick = { onScoreLeagueSelect(league) },
                         modifier = Modifier.focusRequester(menuFocusFor(key)),

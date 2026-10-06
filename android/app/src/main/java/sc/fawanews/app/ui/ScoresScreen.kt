@@ -40,8 +40,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import sc.fawanews.app.R
-import sc.fawanews.app.data.ScoreLeague
-import sc.fawanews.app.data.filterScoresBySearch
 import sc.fawanews.app.ui.components.LastUpdatedLabel
 import sc.fawanews.app.ui.components.ScoreGameCard
 
@@ -49,7 +47,7 @@ import sc.fawanews.app.ui.components.ScoreGameCard
 fun ScoresScreen(
     state: FawaViewModel.ScoresUiState,
     searchQuery: String,
-    onLeagueSelect: (ScoreLeague) -> Unit,
+    onLeagueSelect: (String?) -> Unit,
     modifier: Modifier = Modifier,
     forTv: Boolean = false,
     menuFocusRequester: FocusRequester? = null,
@@ -60,7 +58,7 @@ fun ScoresScreen(
     onLeftToMenu: (() -> Unit)? = null,
     onScoreGameFocused: (String) -> Unit = {},
 ) {
-    val games = state.games.filterScoresBySearch(searchQuery)
+    val games = state.visibleGames(searchQuery)
     val scoreColumns = if (forTv) 2 else 1
     val gameFocus = remember(games.map { it.id }) {
         games.associate { it.id to FocusRequester() }
@@ -147,11 +145,21 @@ fun ScoresScreen(
                                     .padding(bottom = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                ScoreLeague.entries.forEach { league ->
+                                FilterChip(
+                                    selected = state.selectedLeague == null,
+                                    onClick = { onLeagueSelect(null) },
+                                    label = { Text("All today") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                )
+                                state.leagues.forEach { league ->
                                     FilterChip(
                                         selected = state.selectedLeague == league,
                                         onClick = { onLeagueSelect(league) },
-                                        label = { Text(league.label) },
+                                        label = { Text(league) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = MaterialTheme.colorScheme.primary,

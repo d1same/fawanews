@@ -25,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import sc.fawanews.app.R
-import sc.fawanews.app.data.ScoreLeague
 import sc.fawanews.app.ui.components.FawaIcon
 import sc.fawanews.app.ui.theme.PlexColors
 
@@ -34,10 +33,11 @@ fun MobileNavigationDrawer(
     selectedTab: HomeTab,
     liveCategories: List<String>,
     selectedCategory: String?,
-    selectedScoreLeague: ScoreLeague,
+    selectedScoreLeague: String?,
+    scoreLeagues: List<String>,
     onTabSelect: (HomeTab) -> Unit,
     onCategorySelect: (String?) -> Unit,
-    onScoreLeagueSelect: (ScoreLeague) -> Unit,
+    onScoreLeagueSelect: (String?) -> Unit,
     onNavigate: () -> Unit,
 ) {
     ModalDrawerSheet(
@@ -100,9 +100,17 @@ fun MobileNavigationDrawer(
                     color = PlexColors.textSecondary,
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp),
                 )
-                ScoreLeague.entries.forEach { league ->
+                DrawerTab(
+                    label = "All today",
+                    selected = selectedScoreLeague == null,
+                    onClick = {
+                        onScoreLeagueSelect(null)
+                        onNavigate()
+                    },
+                )
+                scoreLeagues.forEach { league ->
                     DrawerTab(
-                        label = league.label,
+                        label = league,
                         selected = selectedScoreLeague == league,
                         onClick = {
                             onScoreLeagueSelect(league)
