@@ -52,7 +52,7 @@ foreach ($title in $titleList) {
     $avg = if ($fps) { ([regex]::Match($fps.Line, 'AvgFrameRate = ([\d.]+)')).Groups[1].Value } else { "-" }
     & $adb -s $Serial shell uiautomator dump /sdcard/fawa_ui.xml | Out-Null
     $ui = (& $adb -s $Serial shell cat /sdcard/fawa_ui.xml) -join ""
-    $screen = if ($ui -match 'Refresh stream') { "STOPPED (Refresh screen)" } elseif ($ui -match 'Menu') { "BACK AT HOME" } else { "PLAYING" }
+    $screen = if ($ui -match 'No article text') { "NO ARTICLE (bug)" } elseif ($ui -match 'Refresh stream') { "STOPPED (Refresh screen)" } elseif ($ui -match 'Menu') { "BACK AT HOME" } else { "PLAYING" }
     $errText = if ($errors) { ($errors | Group-Object | ForEach-Object { "$($_.Name)x$($_.Count)" }) -join "," } else { "none" }
     Write-Output "$title | $screen | errors=$errText | audioGaps=$audioGaps | avgFps=$avg"
 }

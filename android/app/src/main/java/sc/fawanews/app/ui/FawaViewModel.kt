@@ -274,9 +274,7 @@ class FawaViewModel(
             )
             loadStreamsForPlayer(preserveIndex = false, showRefreshing = false)
             val state = _playerState.value
-            if (state?.playback == StreamPlayback.COMING_SOON && state.streamUrls.isEmpty()) {
-                loadArticleForPlayer(item.pagePath)
-            } else if (state?.playback != StreamPlayback.COMING_SOON) {
+            if (state?.isLiveEvent == true && state.playback != StreamPlayback.COMING_SOON) {
                 startStreamAutoRefresh()
             }
         }
@@ -375,22 +373,7 @@ class FawaViewModel(
 
     private suspend fun loadArticleForPlayer(pagePath: String) {
         runCatching { repository.fetchArticleDetails(pagePath) }
-            .onSuccess { article ->
-                val textFirst = article.paragraphs.isNotEmpty()
-                val useStreamOnly = !textFirst && article.streamUrls.isNotEmpty()
-                _playerState.value = PlayerUiState(
-                    title = article.title,
-                    pagePath = pagePath,
-                    streamUrls = if (useStreamOnly) article.streamUrls else emptyList(),
-                    activeStreamIndex = 0,
-                    isLiveEvent = false,
-                    isLoading = false,
-                    playback = if (useStreamOnly) StreamPlayback.LOADING else StreamPlayback.PLAYING,
-                    articleParagraphs = article.paragraphs,
-                    articleImageUrl = article.imageUrl,
-                    articleUrl = article.pageUrl,
-                )
-            }
+            .onSuccess { article -> showArticle(pagePath, article) }
             .onFailure { error ->
                 _playerState.update {
                     it?.copy(
@@ -401,14 +384,34 @@ class FawaViewModel(
             }
     }
 
+    private fun showArticle(pagePath: String, article: sc.fawanews.app.data.ArticleDetails) {
+        val textFirst = article.paragraphs.isNotEmpty()
+        val useStreamOnly = !textFirst && article.streamUrls.isNotEmpty()
+        _playerState.value = PlayerUiState(
+            title = article.title,
+            pagePath = pagePath,
+            streamUrls = if (useStreamOnly) article.streamUrls else emptyList(),
+            activeStreamIndex = 0,
+            isLiveEvent = false,
+            isLoading = false,
+            playback = if (useStreamOnly) StreamPlayback.LOADING else StreamPlayback.PLAYING,
+            articleParagraphs = article.paragraphs,
+            articleImageUrl = article.imageUrl,
+            articleUrl = article.pageUrl,
+        )
+    }
+
     private suspend fun loadStreamsForPlayer(preserveIndex: Boolean, showRefreshing: Boolean) {
         val current = _playerState.value ?: return
         val pagePath = current.pagePath ?: return
         runCatching { repository.fetchStreams(pagePath) }
             .onSuccess { details ->
                 if (details.streamUrls.isEmpty()) {
-                    loadArticleForPlayer(pagePath)
-                    if (_playerState.value?.articleParagraphs?.isNotEmpty() == true) {
+                    // Only switch to the reader when the page really has article text.
+                    // A live game with no link yet shows "Refresh stream", never "No article".
+                    val article = runCatching { repository.fetchArticleDetails(pagePath) }.getOrNull()
+                    if (article != null && article.paragraphs.isNotEmpty()) {
+                        showArticle(pagePath, article)
                         return@onSuccess
                     }
                 }

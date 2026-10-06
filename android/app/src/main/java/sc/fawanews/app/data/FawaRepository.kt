@@ -69,8 +69,12 @@ class FawaRepository(
     companion object {
         const val BASE_URL = "http://www.fawanews.sc/"
 
+        // The site has used both `var videos = [...]` and `var videos_1 = [...]`.
         private val videoArrayRegex =
-            Regex("""var\s+videos\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
+            Regex("""var\s+videos\w*\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
+
+        private val playlistUrlRegex =
+            Regex("""https?://[^"'\s<>]+\.m3u8[^"'\s<>]*""", RegexOption.IGNORE_CASE)
 
         // One client app-wide: each OkHttpClient owns its own connection pool and threads.
         private val sharedClient: OkHttpClient by lazy {
@@ -190,19 +194,25 @@ class FawaRepository(
         }
 
         fun parseVideoUrls(html: String): List<String> {
-            val match = videoArrayRegex.find(html) ?: return emptyList()
-            val jsonArray = match.groupValues[1]
-            return runCatching {
+            val fromArrays = videoArrayRegex.findAll(html)
+                .flatMap { match -> parseUrlArray(match.groupValues[1]) }
+                .toList()
+            val urls = fromArrays.ifEmpty {
+                playlistUrlRegex.findAll(html).map { it.value }.toList()
+            }
+            return urls.distinct()
+        }
+
+        private fun parseUrlArray(jsonArray: String): List<String> =
+            runCatching {
                 Json.decodeFromString<List<String>>(jsonArray)
             }.getOrElse {
                 jsonArray
                     .removePrefix("[")
                     .removeSuffix("]")
                     .split(",")
-                    .map { it.trim().trim('"') }
-                    .filter { it.startsWith("http") }
-            }
-        }
+                    .map { it.trim().trim('"', '\'') }
+            }.filter { it.startsWith("http") }
 
         fun resolveUrl(base: String, path: String): String {
             if (path.startsWith("http", ignoreCase = true)) return path
