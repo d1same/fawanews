@@ -1,6 +1,9 @@
 package sc.fawanews.app.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -16,7 +19,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 class ScoreRepository(
     private val client: OkHttpClient = defaultClient(),
@@ -35,9 +37,11 @@ class ScoreRepository(
     suspend fun fetchScoresForMatches(matches: List<ScheduleItem>): List<ScoreGame> =
         withContext(Dispatchers.IO) {
             val unique = dedupeMatchups(matches)
-            val boards = mutableMapOf<ScoreLeague, List<ScoreGame>>()
-            for (league in unique.mapNotNull { ScoreLeague.fromSiteLabel(it.leagueLabel()) }.distinct()) {
-                boards[league] = runCatching { fetchScores(league) }.getOrDefault(emptyList())
+            val leagues = unique.mapNotNull { ScoreLeague.fromSiteLabel(it.leagueLabel()) }.distinct()
+            val boards = coroutineScope {
+                leagues.map { league ->
+                    async { league to runCatching { fetchScores(league) }.getOrDefault(emptyList()) }
+                }.awaitAll().toMap()
             }
             scoresForLiveDay(unique, boards)
         }
@@ -56,11 +60,7 @@ class ScoreRepository(
     }
 
     companion object {
-        fun defaultClient(): OkHttpClient =
-            OkHttpClient.Builder()
-                .connectTimeout(20, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .build()
+        fun defaultClient(): OkHttpClient = FawaRepository.defaultClient()
 
         fun parseScoreboard(root: JsonObject, leagueLabel: String): List<ScoreGame> {
             val events = root["events"]?.jsonArray ?: return emptyList()

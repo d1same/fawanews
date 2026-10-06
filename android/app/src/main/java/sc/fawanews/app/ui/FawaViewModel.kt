@@ -43,10 +43,23 @@ class FawaViewModel(
 
     fun onAppResumed() {
         refreshSchedule(showSpinner = false)
+        startScheduleAutoRefresh()
         if (_scheduleState.value.selectedTab == HomeTab.SCORES) {
             refreshScores(showSpinner = false)
+            startScoresAutoRefresh()
         }
-        _playerState.value?.pagePath?.let { refreshPlayerStream(showOverlay = false) }
+        val player = _playerState.value
+        if (player?.pagePath != null && player.isLiveEvent) {
+            refreshPlayerStream(showOverlay = false)
+            if (player.playback != StreamPlayback.COMING_SOON) startStreamAutoRefresh()
+        }
+    }
+
+    /** Nothing refreshes while the app is out of sight. */
+    fun onAppStopped() {
+        scheduleRefreshJob?.cancel()
+        scoresRefreshJob?.cancel()
+        stopStreamAutoRefresh()
     }
 
     fun onTvItemFocused(itemId: String) {
@@ -342,6 +355,16 @@ class FawaViewModel(
             selectStream(nextIndex)
             return
         }
+        val lastFetch = state.lastStreamFetchMillis ?: 0L
+        if (state.pagePath != null && System.currentTimeMillis() - lastFetch > RELINK_AFTER_ERROR_MS) {
+            _playerState.update {
+                it?.copy(playAttempt = it.playAttempt + 1, playback = StreamPlayback.LOADING)
+            }
+            viewModelScope.launch {
+                loadStreamsForPlayer(preserveIndex = false, showRefreshing = true)
+            }
+            return
+        }
         _playerState.update {
             it?.copy(
                 playback = StreamPlayback.COMING_SOON,
@@ -488,6 +511,7 @@ class FawaViewModel(
             isRefreshingStream = false,
             playback = StreamPlayback.LOADING,
             lastStreamFetchMillis = System.currentTimeMillis(),
+            playAttempt = current?.playAttempt ?: 0,
         )
     }
 
@@ -569,6 +593,7 @@ class FawaViewModel(
         val videoQualityLabel: String? = null,
         val error: String? = null,
         val lastStreamFetchMillis: Long? = null,
+        val playAttempt: Int = 0,
     ) {
         val streamUrl: String? get() = streamUrls.getOrNull(activeStreamIndex)
     }
@@ -603,6 +628,7 @@ class FawaViewModel(
     companion object {
         private const val SCHEDULE_REFRESH_MS = 3 * 60 * 1000L
         private const val STREAM_REFRESH_MS = 2 * 60 * 1000L
+        private const val RELINK_AFTER_ERROR_MS = 20 * 1000L
         private const val SCORES_REFRESH_MS = 90 * 1000L
     }
 }

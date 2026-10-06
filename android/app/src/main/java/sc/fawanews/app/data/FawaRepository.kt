@@ -41,7 +41,7 @@ class FawaRepository(
 
     fun validateStreams(urls: List<String>): List<String> {
         val distinct = urls.distinct()
-        val probed = distinct.filter { url -> probeStream(url) }
+        val probed = distinct.filter { url -> probeStream(url, client) }
         return probed.ifEmpty { distinct }
     }
 
@@ -72,12 +72,16 @@ class FawaRepository(
         private val videoArrayRegex =
             Regex("""var\s+videos\s*=\s*(\[[^\]]*])""", RegexOption.IGNORE_CASE)
 
-        fun defaultClient(): OkHttpClient =
+        // One client app-wide: each OkHttpClient owns its own connection pool and threads.
+        private val sharedClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
                 .connectTimeout(20, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .followRedirects(true)
                 .build()
+        }
+
+        fun defaultClient(): OkHttpClient = sharedClient
 
         fun parseSchedule(html: String): List<ScheduleItem> {
             val doc = Jsoup.parse(html)

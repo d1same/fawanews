@@ -30,6 +30,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -57,6 +60,7 @@ fun NativePlayer(
     streamUrl: String,
     streamUrls: List<String>,
     activeStreamIndex: Int,
+    playAttempt: Int,
     isRefreshing: Boolean,
     videoQualityLabel: String?,
     modifier: Modifier = Modifier,
@@ -90,9 +94,11 @@ fun NativePlayer(
     val exoPlayer = remember(preferTvQuality) {
         FawaPlayerFactory.create(context, preferTvQuality = preferTvQuality)
     }
+    val liveRecovery = remember(exoPlayer) { LiveRecovery(exoPlayer) }
     var playbackState by remember(exoPlayer) { mutableIntStateOf(exoPlayer.playbackState) }
 
-    LaunchedEffect(streamUrl) {
+    LaunchedEffect(streamUrl, playAttempt) {
+        liveRecovery.reset()
         exoPlayer.setMediaItem(MediaItem.fromUri(streamUrl))
         exoPlayer.prepare()
         exoPlayer.playWhenReady = true
@@ -113,14 +119,43 @@ fun NativePlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                if (liveRecovery.tryRecover(error)) return
                 onPlayerError()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                playerViewRef?.keepScreenOn = isPlaying
             }
         }
         exoPlayer.addListener(listener)
         onDispose {
+            liveRecovery.release()
             exoPlayer.removeListener(listener)
             exoPlayer.release()
         }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer) {
+        // A live game left in the background would keep downloading and decoding video.
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    liveRecovery.reset()
+                    exoPlayer.stop()
+                }
+                Lifecycle.Event.ON_START -> {
+                    if (exoPlayer.playbackState == Player.STATE_IDLE && exoPlayer.mediaItemCount > 0) {
+                        exoPlayer.seekToDefaultPosition()
+                        exoPlayer.prepare()
+                        exoPlayer.playWhenReady = true
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Box(

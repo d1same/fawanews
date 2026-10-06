@@ -81,8 +81,10 @@ class MainActivity : ComponentActivity() {
                 val lifecycleOwner = LocalLifecycleOwner.current
                 DisposableEffect(lifecycleOwner, vm) {
                     val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) {
-                            vm.onAppResumed()
+                        when (event) {
+                            Lifecycle.Event.ON_RESUME -> vm.onAppResumed()
+                            Lifecycle.Event.ON_STOP -> vm.onAppStopped()
+                            else -> Unit
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
