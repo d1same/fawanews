@@ -228,6 +228,16 @@ class FawaViewModel(
         }
     }
 
+    fun openScoreGame(game: sc.fawanews.app.data.ScoreGame) {
+        val path = game.streamPagePath ?: return
+        val item = _scheduleState.value.liveItems.firstOrNull { live ->
+            live.pagePath == path || live.id == path
+        } ?: return
+        openItem(item)
+        _scheduleState.update { it.copy(tvLastFocusedItemId = game.id) }
+        _scoresState.update { it.copy(tvLastFocusedGameId = game.id) }
+    }
+
     fun openItem(item: ScheduleItem) {
         _scheduleState.update { it.copy(tvLastFocusedItemId = item.id) }
         val schedule = _scheduleState.value

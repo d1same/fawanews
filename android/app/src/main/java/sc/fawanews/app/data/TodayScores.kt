@@ -58,7 +58,12 @@ fun scoresForLiveDay(
             continue
         }
         val board = boards[league].orEmpty()
-        scores.addAll(board.map { game -> game.copy(leagueLabel = siteLabel) })
+        scores.addAll(
+            board.map { game ->
+                val stream = items.firstOrNull { item -> matchScore(item, listOf(game)) != null }
+                game.copy(leagueLabel = siteLabel, streamPagePath = stream?.pagePath)
+            },
+        )
         for (item in items) {
             val alreadyListed = matchScore(item, board) != null
             if (!alreadyListed) scores.add(placeholderScore(item))
@@ -87,5 +92,6 @@ fun placeholderScore(item: ScheduleItem): ScoreGame {
         venueLocation = null,
         broadcastLabel = null,
         startTimeLabel = time,
+        streamPagePath = item.pagePath,
     )
 }

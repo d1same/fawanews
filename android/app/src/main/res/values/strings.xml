@@ -19,12 +19,19 @@
     <string name="menu_scores">Scores</string>
     <string name="scores_source_note">Today\'s live matches · scores refresh automatically</string>
     <string name="scores_empty">No matches on the live list right now.</string>
+    <string name="score_watch">Watch</string>
     <string name="menu_title">Menu</string>
     <string name="menu_sports">Sport</string>
     <string name="menu_leagues">Leagues</string>
     <string name="updated_ago">Updated %1$s · auto-refresh on</string>
     <string name="empty_live">No live games in this filter. Try All or refresh.</string>
     <string name="empty_news">No news items right now.</string>
+    <string name="update_title">Update available</string>
+    <string name="update_body">Version %1$s is ready. Install it now?</string>
+    <string name="update_install">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading the update…</string>
+    <string name="update_failed">Could not download the update. Try again next time you open the app.</string>
     <string name="refresh_stream">Refresh stream</string>
     <string name="stream_option">Source %1$d</string>
     <string name="player_hint">Tap video for play/pause · Settings = quality</string>

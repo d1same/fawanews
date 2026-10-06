@@ -71,6 +71,7 @@ fun TvHomeScreen(
     onFocusContentFromMenu: () -> Unit,
     onTvLeftFromContent: () -> Unit,
     onTvScoreGameFocused: (String) -> Unit,
+    onScoreGameClick: (sc.fawanews.app.data.ScoreGame) -> Unit,
     onClearFocusRequest: () -> Unit,
 ) {
     val listItems = when (state.selectedTab) {
@@ -284,6 +285,7 @@ fun TvHomeScreen(
                         returnToMenu()
                     },
                     onScoreGameFocused = onTvScoreGameFocused,
+                    onScoreGameClick = onScoreGameClick,
                 )
             } else when {
                 state.error != null && state.items.isEmpty() -> {

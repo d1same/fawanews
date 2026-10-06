@@ -57,6 +57,7 @@ fun ScoresScreen(
     onFocusRequestHandled: () -> Unit = {},
     onLeftToMenu: (() -> Unit)? = null,
     onScoreGameFocused: (String) -> Unit = {},
+    onScoreGameClick: (sc.fawanews.app.data.ScoreGame) -> Unit = {},
 ) {
     val games = state.visibleGames(searchQuery)
     val scoreColumns = if (forTv) 2 else 1
@@ -246,6 +247,9 @@ fun ScoresScreen(
                                                     },
                                                 ),
                                             focusable = forTv,
+                                            onClick = game.streamPagePath?.let {
+                                                { onScoreGameClick(game) }
+                                            },
                                         )
                                     }
                                     repeat(scoreColumns - row.size) {

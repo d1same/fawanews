@@ -17,6 +17,7 @@ data class ScoreGame(
     val venueLocation: String?,
     val broadcastLabel: String?,
     val startTimeLabel: String?,
+    val streamPagePath: String? = null,
 )
 
 enum class ScoreLeague(val label: String, val espnPath: String, val keywords: List<String>) {

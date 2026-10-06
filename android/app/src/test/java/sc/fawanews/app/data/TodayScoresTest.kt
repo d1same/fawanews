@@ -64,6 +64,8 @@ class TodayScoresTest {
             mapOf(ScoreLeague.NFL to listOf(saints, bills)),
         )
         assertEquals(listOf("Falcons", "Bills"), day.map { it.homeTeam })
+        assertEquals(onlySaints.pagePath, day.first { it.homeTeam == "Falcons" }.streamPagePath)
+        assertEquals(null, day.first { it.homeTeam == "Bills" }.streamPagePath)
     }
 
     private fun score(id: String, home: String, away: String, homeScore: String, awayScore: String) = ScoreGame(

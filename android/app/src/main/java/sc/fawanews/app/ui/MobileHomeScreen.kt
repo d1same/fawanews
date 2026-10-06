@@ -55,6 +55,7 @@ fun MobileHomeScreen(
     onScoreLeagueSelect: (String?) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onItemClick: (ScheduleItem) -> Unit,
+    onScoreGameClick: (sc.fawanews.app.data.ScoreGame) -> Unit,
 ) {
     val listItems = when (state.selectedTab) {
         HomeTab.LIVE -> state.filteredLiveItems
@@ -144,6 +145,7 @@ fun MobileHomeScreen(
                         state = scoresState,
                         searchQuery = state.searchQuery,
                         onLeagueSelect = onScoreLeagueSelect,
+                        onScoreGameClick = onScoreGameClick,
                     )
                 } else when {
                     state.error != null && state.items.isEmpty() -> {

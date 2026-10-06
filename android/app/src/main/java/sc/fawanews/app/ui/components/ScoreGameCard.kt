@@ -1,6 +1,7 @@
 package sc.fawanews.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,13 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import sc.fawanews.app.R
 import sc.fawanews.app.data.ScoreGame
 import sc.fawanews.app.ui.TvFocusStyles
 import sc.fawanews.app.ui.theme.PlexColors
+import sc.fawanews.app.ui.tvClickOnCenter
 
 @Composable
 fun ScoreGameCard(
@@ -37,23 +41,28 @@ fun ScoreGameCard(
     focusable: Boolean = false,
     compact: Boolean = false,
     showLeague: Boolean = false,
+    onClick: (() -> Unit)? = null,
     onFocusChange: ((Boolean) -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val pad = if (compact) 10.dp else 14.dp
+    val canWatch = onClick != null
     Card(
-        modifier = modifier.then(
-            if (focusable) {
-                Modifier
-                    .focusable()
-                    .onFocusChanged {
-                        focused = it.isFocused
-                        onFocusChange?.invoke(it.isFocused)
-                    }
-            } else {
-                Modifier
+        modifier = modifier
+            .then(
+                if (canWatch) {
+                    Modifier.clickable(onClick = onClick)
+                } else if (focusable) {
+                    Modifier.focusable()
+                } else {
+                    Modifier
+                },
+            )
+            .then(if (canWatch && focusable) Modifier.tvClickOnCenter(onClick) else Modifier)
+            .onFocusChanged {
+                focused = it.isFocused
+                if (focusable || canWatch) onFocusChange?.invoke(it.isFocused)
             },
-        ),
         shape = RoundedCornerShape(if (compact) 12.dp else 16.dp),
         border = if (focusable && focused) {
             BorderStroke(TvFocusStyles.focusBorder, TvFocusStyles.focusGlow)
@@ -86,6 +95,17 @@ fun ScoreGameCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                if (game.streamPagePath != null) {
+                    Surface(color = PlexColors.amber, shape = RoundedCornerShape(4.dp)) {
+                        Text(
+                            stringResource(R.string.score_watch),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = PlexColors.canvas,
+                        )
+                    }
+                }
                 if (game.isLive) {
                     Surface(color = PlexColors.liveRed, shape = RoundedCornerShape(4.dp)) {
                         Text(

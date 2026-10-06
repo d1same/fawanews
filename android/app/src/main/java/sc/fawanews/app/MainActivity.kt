@@ -6,6 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,13 +18,21 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import sc.fawanews.app.ui.FawaViewModel
 import sc.fawanews.app.ui.MobileHomeScreen
 import sc.fawanews.app.ui.PhonePlayerOrientationEffect
 import sc.fawanews.app.ui.PlayerScreen
 import sc.fawanews.app.ui.TvHomeScreen
+import sc.fawanews.app.ui.UpdateAvailableDialog
 import sc.fawanews.app.ui.components.FawaLoadingScreen
 import sc.fawanews.app.ui.theme.FawaNewsTheme
+import sc.fawanews.app.update.AppRelease
+import sc.fawanews.app.update.GithubAppUpdate
+import sc.fawanews.app.update.canInstallPackages
+import sc.fawanews.app.update.installDownloadedApk
+import sc.fawanews.app.update.openInstallPermissionSettings
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 
@@ -79,6 +89,27 @@ class MainActivity : ComponentActivity() {
                     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                 }
 
+                var updateOffer by remember { mutableStateOf<AppRelease?>(null) }
+                var updateBusy by remember { mutableStateOf(false) }
+                var updateError by remember { mutableStateOf<String?>(null) }
+                var pendingApk by remember { mutableStateOf<File?>(null) }
+                val updateScope = rememberCoroutineScope()
+                LaunchedEffect(Unit) {
+                    updateOffer = GithubAppUpdate().latestNewerThan(BuildConfig.VERSION_NAME)
+                }
+                DisposableEffect(lifecycleOwner) {
+                    val installObserver = LifecycleEventObserver { _, event ->
+                        if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+                        val apk = pendingApk ?: return@LifecycleEventObserver
+                        if (!canInstallPackages(activity)) return@LifecycleEventObserver
+                        installDownloadedApk(activity, apk)
+                        pendingApk = null
+                        updateOffer = null
+                    }
+                    lifecycleOwner.lifecycle.addObserver(installObserver)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(installObserver) }
+                }
+
                 val showStartupLoading =
                     player == null &&
                         schedule.items.isEmpty() &&
@@ -114,6 +145,7 @@ class MainActivity : ComponentActivity() {
                         onFocusContentFromMenu = vm::focusContentFromMenuTv,
                         onTvLeftFromContent = vm::onTvLeftFromContent,
                         onTvScoreGameFocused = vm::onTvScoreGameFocused,
+                        onScoreGameClick = vm::openScoreGame,
                         onClearFocusRequest = vm::clearTvFocusRequest,
                     )
                 } else {
@@ -127,6 +159,42 @@ class MainActivity : ComponentActivity() {
                         onScoreLeagueSelect = vm::selectScoreLeague,
                         onSearchQueryChange = vm::setSearchQuery,
                         onItemClick = vm::openItem,
+                        onScoreGameClick = vm::openScoreGame,
+                    )
+                }
+
+                updateOffer?.let { release ->
+                    UpdateAvailableDialog(
+                        versionName = release.versionName,
+                        downloading = updateBusy,
+                        error = updateError,
+                        tvMode = isTv,
+                        onLater = {
+                            updateOffer = null
+                            updateError = null
+                        },
+                        onUpdate = {
+                            if (updateBusy) return@UpdateAvailableDialog
+                            updateBusy = true
+                            updateError = null
+                            updateScope.launch {
+                                val apk = runCatching {
+                                    GithubAppUpdate().download(release, activity.cacheDir)
+                                }.getOrNull()
+                                updateBusy = false
+                                if (apk == null) {
+                                    updateError = activity.getString(R.string.update_failed)
+                                    return@launch
+                                }
+                                if (canInstallPackages(activity)) {
+                                    installDownloadedApk(activity, apk)
+                                    updateOffer = null
+                                } else {
+                                    pendingApk = apk
+                                    openInstallPermissionSettings(activity)
+                                }
+                            }
+                        },
                     )
                 }
             }
