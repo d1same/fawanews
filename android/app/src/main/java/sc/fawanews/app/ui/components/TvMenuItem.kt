@@ -51,14 +51,14 @@ fun TvMenuItem(
     val shape = RoundedCornerShape(TvFocusStyles.menuItemCorner)
 
     // One layer only: fill when focused. Selected = bar + text, no second wash.
-    val rowBg = if (focused) PlexColors.amber.copy(alpha = 0.17f) else Color.Transparent
+    val rowBg = if (focused) PlexColors.accent.copy(alpha = 0.17f) else Color.Transparent
     val barColor = when {
-        focused -> PlexColors.amberBright
-        selected -> PlexColors.amber.copy(alpha = 0.7f)
+        focused -> PlexColors.accentBright
+        selected -> PlexColors.accent.copy(alpha = 0.7f)
         else -> Color.Transparent
     }
     val textColor = when {
-        focused -> PlexColors.amberBright
+        focused -> PlexColors.accentBright
         selected -> PlexColors.textPrimary
         else -> PlexColors.textSecondary.copy(alpha = 0.88f)
     }

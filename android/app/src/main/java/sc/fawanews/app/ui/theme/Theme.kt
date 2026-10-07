@@ -8,15 +8,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 
-/** Plex-inspired: near-black canvas, warm amber accent (not blue/purple). */
+/** Near-black canvas with the Clutch logo's cyan as the accent. */
 object PlexColors {
     val canvas = Color(0xFF0B0B0B)
     val sidebar = Color(0xFF121212)
     val card = Color(0xFF1F1F1F)
     val cardElevated = Color(0xFF2A2A2A)
-    val amber = Color(0xFFE5A00D)
-    val amberBright = Color(0xFFF5C518)
-    val amberMuted = Color(0xFFCC7B19)
+    val accent = Color(0xFF00F2FC)
+    val accentBright = Color(0xFF7CF8FF)
+    val accentMuted = Color(0xFF00A9B5)
     val textPrimary = Color(0xFFF3F3F3)
     val textSecondary = Color(0xFF9A9A9A)
     val divider = Color(0xFF333333)
@@ -24,9 +24,9 @@ object PlexColors {
 }
 
 private val MobileDark = darkColorScheme(
-    primary = PlexColors.amber,
+    primary = PlexColors.accent,
     onPrimary = Color(0xFF1A1A1A),
-    secondary = PlexColors.amberMuted,
+    secondary = PlexColors.accentMuted,
     background = PlexColors.canvas,
     surface = PlexColors.card,
     onBackground = PlexColors.textPrimary,
@@ -36,9 +36,9 @@ private val MobileDark = darkColorScheme(
 )
 
 private val TvDark = darkColorScheme(
-    primary = PlexColors.amber,
+    primary = PlexColors.accent,
     onPrimary = Color(0xFF1A1A1A),
-    secondary = PlexColors.amberBright,
+    secondary = PlexColors.accentBright,
     background = PlexColors.canvas,
     surface = PlexColors.card,
     onBackground = PlexColors.textPrimary,
@@ -67,7 +67,7 @@ private val TvTypography = Typography(
 )
 
 @Composable
-fun FawaNewsTheme(
+fun ClutchTheme(
     tv: Boolean = false,
     content: @Composable () -> Unit,
 ) {

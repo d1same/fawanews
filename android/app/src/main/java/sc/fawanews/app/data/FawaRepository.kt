@@ -26,7 +26,7 @@ class FawaRepository(
         val title = pageTitle(html)
         val urls = validateStreams(parseVideoUrls(html))
         StreamDetails(
-            title = title.ifBlank { "FawaNews" },
+            title = title.ifBlank { "Clutch" },
             streamUrls = urls,
             pageUrl = absolute,
         )
@@ -160,7 +160,7 @@ class FawaRepository(
             streamUrls: List<String> = emptyList(),
         ): ArticleDetails {
             val doc = Jsoup.parse(html)
-            val title = pageTitle(html).ifBlank { "FawaNews" }
+            val title = pageTitle(html).ifBlank { "Clutch" }
             val main = doc.select(".uk-width-2-3\\@l").firstOrNull()
                 ?: doc.select("main.page-main").firstOrNull()
                 ?: doc.body()

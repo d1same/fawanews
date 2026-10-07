@@ -29,6 +29,18 @@ class AppReleaseTest {
     }
 
     @Test
+    fun releaseApkPrefersClutchName() {
+        val release = selectReleaseApk(
+            tagName = "v1.1.0",
+            assets = listOf(
+                ReleaseAsset("notes.apk", "https://example.com/notes.apk"),
+                ReleaseAsset("Clutch-1.1.0.apk", "https://example.com/Clutch-1.1.0.apk"),
+            ),
+        )
+        assertEquals("Clutch-1.1.0.apk", release?.apkName)
+    }
+
+    @Test
     fun missingApkMeansNoUpdate() {
         assertNull(selectReleaseApk("v1.0.11", emptyList()))
     }

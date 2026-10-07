@@ -221,7 +221,7 @@ fun NativePlayer(
         if (playbackState == Player.STATE_BUFFERING || isRefreshing) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = PlexColors.amberBright,
+                color = PlexColors.accentBright,
                 strokeWidth = 2.5.dp,
             )
         }

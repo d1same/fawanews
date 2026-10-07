@@ -140,7 +140,7 @@ private fun TvSearchBar(
             FawaIcon(
                 Icons.Default.Search,
                 contentDescription = null,
-                tint = PlexColors.amber,
+                tint = PlexColors.accent,
             )
         },
         trailingIcon = {
@@ -149,7 +149,7 @@ private fun TvSearchBar(
                     FawaIcon(
                         Icons.Default.Close,
                         contentDescription = stringResource(R.string.search_clear),
-                        tint = PlexColors.amberBright,
+                        tint = PlexColors.accentBright,
                     )
                 }
             }
@@ -161,9 +161,9 @@ private fun TvSearchBar(
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = PlexColors.textPrimary,
             unfocusedTextColor = PlexColors.textPrimary,
-            focusedBorderColor = PlexColors.amberBright,
+            focusedBorderColor = PlexColors.accentBright,
             unfocusedBorderColor = PlexColors.divider,
-            cursorColor = PlexColors.amber,
+            cursorColor = PlexColors.accent,
             focusedContainerColor = PlexColors.card,
             unfocusedContainerColor = PlexColors.card.copy(alpha = 0.65f),
         ),
@@ -189,7 +189,7 @@ private fun TvClearButton(
             .tvClickOnCenter(onClick)
             .border(
                 width = if (focused) TvFocusStyles.focusBorder else 1.dp,
-                color = if (focused) PlexColors.amberBright else PlexColors.amber,
+                color = if (focused) PlexColors.accentBright else PlexColors.accent,
                 shape = shape,
             ),
     ) {

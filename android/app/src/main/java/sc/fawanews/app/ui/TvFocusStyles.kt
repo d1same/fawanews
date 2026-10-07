@@ -22,8 +22,8 @@ object TvFocusStyles {
     /** Left nav rows — keep outline hairline so D-pad focus stays readable without bulk. */
     val menuFocusBorder: Dp = 1.dp
     val menuItemCorner: Dp = 6.dp
-    val focusGlow: Color = PlexColors.amberBright
-    val menuAccent: Color = PlexColors.amber
+    val focusGlow: Color = PlexColors.accentBright
+    val menuAccent: Color = PlexColors.accent
     val menuPanel: Color = PlexColors.sidebar
 }
 

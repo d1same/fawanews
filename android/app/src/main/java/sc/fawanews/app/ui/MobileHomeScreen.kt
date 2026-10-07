@@ -184,11 +184,6 @@ fun MobileHomeScreen(
                                     LastUpdatedLabel(
                                         updatedAtMillis = state.lastUpdatedMillis,
                                     )
-                                    Text(
-                                        stringResource(R.string.domain_notice),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
-                                    )
                                     state.selectedCategory?.let { category ->
                                         Text(
                                             stringResource(R.string.filter_active, category),

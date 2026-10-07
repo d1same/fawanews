@@ -26,7 +26,7 @@ import sc.fawanews.app.ui.PlayerScreen
 import sc.fawanews.app.ui.TvHomeScreen
 import sc.fawanews.app.ui.UpdateAvailableDialog
 import sc.fawanews.app.ui.components.FawaLoadingScreen
-import sc.fawanews.app.ui.theme.FawaNewsTheme
+import sc.fawanews.app.ui.theme.ClutchTheme
 import sc.fawanews.app.update.AppRelease
 import sc.fawanews.app.update.GithubAppUpdate
 import sc.fawanews.app.update.canInstallPackages
@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                 if (isTv) activity.applyTelevisionWindowPolicy()
                 onDispose { }
             }
-            FawaNewsTheme(tv = isTv) {
+            ClutchTheme(tv = isTv) {
                 val vm: FawaViewModel = viewModel(
                     factory = FawaViewModel.Factory(app.repository, app.scoreRepository),
                 )

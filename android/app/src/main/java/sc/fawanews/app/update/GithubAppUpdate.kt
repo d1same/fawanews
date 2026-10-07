@@ -73,7 +73,7 @@ class GithubAppUpdate(
     companion object {
         private const val LATEST_URL =
             "https://api.github.com/repos/d1same/fawanews/releases/latest"
-        private const val USER_AGENT = "FawaNews-Android"
+        private const val USER_AGENT = "Clutch-Android"
 
         private val json = Json { ignoreUnknownKeys = true }
 

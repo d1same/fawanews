@@ -96,7 +96,7 @@ fun ScoreGameCard(
                     modifier = Modifier.weight(1f),
                 )
                 if (game.streamPagePath != null) {
-                    Surface(color = PlexColors.amber, shape = RoundedCornerShape(4.dp)) {
+                    Surface(color = PlexColors.accent, shape = RoundedCornerShape(4.dp)) {
                         Text(
                             stringResource(R.string.score_watch),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -195,7 +195,7 @@ private fun ScoreTeamRow(
             score,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = PlexColors.amberBright,
+            color = PlexColors.accentBright,
         )
     }
 }

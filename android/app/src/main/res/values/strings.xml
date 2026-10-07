@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">FawaNews</string>
+    <string name="app_name">Clutch</string>
     <string name="schedule_title">Live schedule</string>
     <string name="news_title">Sports news</string>
     <string name="refresh">Refresh</string>
@@ -8,7 +8,6 @@
     <string name="loading">Loading…</string>
     <string name="error_load">Could not load schedule. Check your connection and try again.</string>
     <string name="no_stream">No stream found for this item.</string>
-    <string name="domain_notice">Official site: fawanews.sc — other apps using this name are not affiliated.</string>
     <string name="live_badge">LIVE</string>
     <string name="read_article">Read article</string>
     <string name="article_empty">No article text on this page.</string>

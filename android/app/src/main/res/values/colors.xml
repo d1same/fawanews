@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="background">#FF0B0B0B</color>
-    <color name="primary">#FFE5A00D</color>
-    <color name="primary_dark">#FFCC7B19</color>
+    <color name="primary">#FF00F2FC</color>
+    <color name="primary_dark">#FF00A9B5</color>
     <color name="accent_live">#FFE53935</color>
-    <color name="ic_launcher_background">#FF6B35</color>
+    <color name="ic_launcher_background">#FF000000</color>
 </resources>

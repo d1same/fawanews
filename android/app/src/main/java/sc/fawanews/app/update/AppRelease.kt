@@ -28,7 +28,8 @@ fun selectReleaseApk(tagName: String, assets: List<ReleaseAsset>): AppRelease? {
         asset.name.endsWith(".apk", ignoreCase = true) &&
             !asset.name.contains("debug", ignoreCase = true)
     }
-    val chosen = apks.firstOrNull { it.name.startsWith("FawaNews", ignoreCase = true) }
+    val chosen = apks.firstOrNull { it.name.startsWith("Clutch", ignoreCase = true) }
+        ?: apks.firstOrNull { it.name.startsWith("FawaNews", ignoreCase = true) }
         ?: apks.firstOrNull()
         ?: return null
     val versionName = tagName.trim().removePrefix("v").removePrefix("V")

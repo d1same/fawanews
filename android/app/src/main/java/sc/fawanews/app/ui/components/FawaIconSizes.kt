@@ -17,12 +17,12 @@ object FawaIconSizes {
     /** Empty states (coming soon, etc.). */
     val hero: Dp = 64.dp
 
-    /** App mark beside titles on TV home. */
-    val brandMark: Dp = 36.dp
+    /** Height of the Clutch wordmark in the TV header and phone drawer. */
+    val brandWordmark: Dp = 26.dp
 
-    /** Cold start / schedule load (Compose). */
-    val loadingLogoAppTv: Dp = 88.dp
-    val loadingLogoAppPhone: Dp = 72.dp
+    /** Width of the Clutch wordmark on the cold start / schedule load screen. */
+    val loadingWordmarkTv: Dp = 300.dp
+    val loadingWordmarkPhone: Dp = 220.dp
 
     /** Stream fetch + player buffer overlay. */
     val loadingLogoStreamTv: Dp = 64.dp

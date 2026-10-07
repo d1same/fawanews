@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -226,20 +227,12 @@ fun TvHomeScreen(
                     .padding(bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Image(
-                    painter = painterResource(R.drawable.fawanews_icon),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(FawaIconSizes.brandMark)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop,
-                )
-                Column(Modifier.padding(start = 10.dp)) {
-                    Text(
-                        "FawaNews",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PlexColors.textPrimary,
+                Column {
+                    Image(
+                        painter = painterResource(R.drawable.clutch_wordmark),
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier.height(FawaIconSizes.brandWordmark),
+                        contentScale = ContentScale.Fit,
                     )
                     Text(
                         text = when (state.selectedTab) {
@@ -248,7 +241,7 @@ fun TvHomeScreen(
                             HomeTab.NEWS -> stringResource(R.string.menu_news)
                         } + state.selectedCategory?.let { " · $it" }.orEmpty(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = PlexColors.amber,
+                        color = PlexColors.accent,
                     )
                 }
                 LastUpdatedLabel(
@@ -295,7 +288,7 @@ fun TvHomeScreen(
                 }
                 state.isLoading && state.items.isEmpty() -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PlexColors.amber)
+                        CircularProgressIndicator(color = PlexColors.accent)
                     }
                 }
                 listItems.isEmpty() -> {

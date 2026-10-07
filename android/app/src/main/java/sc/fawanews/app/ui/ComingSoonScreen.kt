@@ -128,9 +128,9 @@ private fun StreamActionButton(
                 .tvClickOnCenter(onClick),
             shape = shape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = PlexColors.amber,
+                containerColor = PlexColors.accent,
                 contentColor = Color(0xFF1A1A1A),
-                disabledContainerColor = PlexColors.amber.copy(alpha = 0.45f),
+                disabledContainerColor = PlexColors.accent.copy(alpha = 0.45f),
                 disabledContentColor = Color(0xFF1A1A1A).copy(alpha = 0.7f),
             ),
             border = if (focused) {

@@ -1,5 +1,6 @@
 package sc.fawanews.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +22,14 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import sc.fawanews.app.R
 import sc.fawanews.app.ui.components.FawaIcon
+import sc.fawanews.app.ui.components.FawaIconSizes
 import sc.fawanews.app.ui.theme.PlexColors
 
 @Composable
@@ -49,12 +53,13 @@ fun MobileNavigationDrawer(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 20.dp),
         ) {
-            Text(
-                "FawaNews",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = PlexColors.textPrimary,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+            Image(
+                painter = painterResource(R.drawable.clutch_wordmark),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier
+                    .padding(horizontal = 28.dp, vertical = 8.dp)
+                    .height(FawaIconSizes.brandWordmark),
+                contentScale = ContentScale.Fit,
             )
             Text(
                 stringResource(R.string.menu_title),
@@ -164,9 +169,9 @@ private fun DrawerTab(
         icon = icon,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
         colors = NavigationDrawerItemDefaults.colors(
-            selectedContainerColor = PlexColors.amber.copy(alpha = 0.22f),
-            selectedTextColor = PlexColors.amberBright,
-            selectedIconColor = PlexColors.amberBright,
+            selectedContainerColor = PlexColors.accent.copy(alpha = 0.22f),
+            selectedTextColor = PlexColors.accentBright,
+            selectedIconColor = PlexColors.accentBright,
             unselectedTextColor = PlexColors.textPrimary,
             unselectedIconColor = PlexColors.textSecondary,
         ),
