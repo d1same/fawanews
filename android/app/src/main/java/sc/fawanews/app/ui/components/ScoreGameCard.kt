@@ -118,20 +118,30 @@ fun ScoreGameCard(
                     }
                 }
             }
-            ScoreTeamRow(
-                name = game.awayTeam,
-                score = game.awayScore,
-                logoUrl = game.awayLogoUrl,
-                record = game.awayRecord,
-                compact = compact,
-            )
-            ScoreTeamRow(
-                name = game.homeTeam,
-                score = game.homeScore,
-                logoUrl = game.homeLogoUrl,
-                record = game.homeRecord,
-                compact = compact,
-            )
+            if (game.awayTeam.isBlank()) {
+                Text(
+                    game.homeTeam,
+                    style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = PlexColors.textPrimary,
+                )
+            } else {
+                ScoreTeamRow(
+                    name = game.awayTeam,
+                    score = game.awayScore,
+                    logoUrl = game.awayLogoUrl,
+                    record = game.awayRecord,
+                    compact = compact,
+                )
+                ScoreTeamRow(
+                    name = game.homeTeam,
+                    score = game.homeScore,
+                    logoUrl = game.homeLogoUrl,
+                    record = game.homeRecord,
+                    compact = compact,
+                )
+            }
             val footer = buildList {
                 if (game.isLive) add(game.statusLabel)
                 game.venueName?.let { add(it) }

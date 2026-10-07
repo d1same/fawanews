@@ -25,7 +25,8 @@ class ScoreRepository(
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     suspend fun fetchScores(league: ScoreLeague): List<ScoreGame> = withContext(Dispatchers.IO) {
-        val url = "https://site.api.espn.com/apis/site/v2/sports/${league.espnPath}/scoreboard"
+        val base = "https://site.api.espn.com/apis/site/v2/sports/${league.espnPath}/scoreboard"
+        val url = if (league.byDate) "$base?dates=${espnSportsDay()}" else base
         val body = getJson(url)
         parseScoreboard(body, league.label)
     }
@@ -61,6 +62,11 @@ class ScoreRepository(
 
     companion object {
         fun defaultClient(): OkHttpClient = FawaRepository.defaultClient()
+
+        /** US Eastern day, held back until 5 AM so late games stay on the board past midnight. */
+        fun espnSportsDay(now: Instant = Instant.now()): String =
+            DateTimeFormatter.ofPattern("yyyyMMdd")
+                .format(now.atZone(ZoneId.of("America/New_York")).minusHours(5))
 
         fun parseScoreboard(root: JsonObject, leagueLabel: String): List<ScoreGame> {
             val events = root["events"]?.jsonArray ?: return emptyList()
@@ -105,6 +111,7 @@ class ScoreRepository(
                 awayRecord = away.overallRecord(),
                 statusLabel = shortDetail,
                 isLive = isLive,
+                isFinished = state == "post",
                 venueName = venueName,
                 venueLocation = venueLocation,
                 broadcastLabel = broadcastLabel,
