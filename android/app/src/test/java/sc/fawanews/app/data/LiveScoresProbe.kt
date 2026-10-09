@@ -9,7 +9,8 @@ class LiveScoresProbe {
     @Test
     fun report() {
         assumeTrue(System.getenv("LIVE_SCORES_PROBE") == "1")
-        val schedule = runBlocking { FawaRepository().fetchSchedule() }.filter { it.isLive }
+        val everything = runBlocking { FawaRepository().fetchSchedule() }
+        val schedule = everything.filter { it.isLive }
         val unique = dedupeMatchups(schedule)
         val out = StringBuilder()
         out.appendLine("SITE GAMES: ${unique.size}")
@@ -23,6 +24,10 @@ class LiveScoresProbe {
         for (g in scores) {
             out.appendLine("[${g.leagueLabel}] ${g.awayTeam} ${g.awayScore} @ ${g.homeTeam} ${g.homeScore} | ${g.statusLabel} | live=${g.isLive} | logo=${g.homeLogoUrl != null} | watch=${g.streamPagePath != null}")
         }
+        val news = everything.filter { !it.isLive }
+        out.appendLine()
+        out.appendLine("NEWS: ${news.size}")
+        news.take(8).forEach { out.appendLine("${it.title} | ${it.pagePath}") }
         File("build/live-scores-probe.txt").writeText(out.toString())
     }
 }

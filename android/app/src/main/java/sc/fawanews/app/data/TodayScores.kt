@@ -36,11 +36,16 @@ fun parseMatchupSides(title: String): Pair<String, String>? {
     return left to right
 }
 
-private fun plainName(name: String): String =
-    accents.replace(Normalizer.normalize(name, Normalizer.Form.NFD), "")
-        .lowercase()
+/** Letters that do not split into a base letter plus accent are spelled out by hand. */
+private val spelledOut = mapOf('æ' to "ae", 'ø' to "o", 'ß' to "ss", 'đ' to "d", 'ł' to "l", 'ı' to "i", 'œ' to "oe")
+
+private fun plainName(name: String): String {
+    val lower = name.lowercase()
+    val spelled = buildString { lower.forEach { append(spelledOut[it] ?: it) } }
+    return accents.replace(Normalizer.normalize(spelled, Normalizer.Form.NFD), "")
         .replace(punctuation, " ")
         .trim()
+}
 
 fun teamNamesMatch(scheduleSide: String, espnName: String): Boolean {
     val side = plainName(scheduleSide)
@@ -53,12 +58,14 @@ fun teamNamesMatch(scheduleSide: String, espnName: String): Boolean {
  * Both teams must match. When the scoreboard spells one team very differently
  * ("Academia del Balompie" vs "ABB"), one matching team is enough if it plays in only one game.
  */
-fun findBoardGame(item: ScheduleItem, board: List<ScoreGame>): ScoreGame? {
+fun findBoardGame(item: ScheduleItem, board: List<ScoreGame>, allowOneTeam: Boolean = true): ScoreGame? {
     val (left, right) = parseMatchupSides(item.title) ?: return null
-    return board.firstOrNull { game ->
+    val both = board.firstOrNull { game ->
         (teamNamesMatch(left, game.homeTeam) && teamNamesMatch(right, game.awayTeam)) ||
             (teamNamesMatch(left, game.awayTeam) && teamNamesMatch(right, game.homeTeam))
-    } ?: board.filter { game ->
+    }
+    if (both != null || !allowOneTeam) return both
+    return board.filter { game ->
         listOf(left, right).any { side ->
             teamNamesMatch(side, game.homeTeam) || teamNamesMatch(side, game.awayTeam)
         }
@@ -69,19 +76,23 @@ fun matchScore(item: ScheduleItem, board: List<ScoreGame>): ScoreGame? =
     findBoardGame(item, board)?.copy(id = item.id, leagueLabel = item.leagueLabel())
 
 /**
- * Sports on the live list get the full day's scoreboard.
- * A game the site is not streaming still shows. A site game with no scoreboard row still shows.
+ * A league the site streams gets its full day's scoreboard, so games the site is not streaming
+ * still show. That only happens once a site game matched the board, which keeps a wrongly
+ * guessed league from filling the list. Soccer games with no league board are looked up on
+ * the all-soccer board. A site game found nowhere still shows, without a score.
  */
 fun scoresForLiveDay(
     matches: List<ScheduleItem>,
     boards: Map<ScoreLeague, List<ScoreGame>>,
+    allSoccer: List<ScoreGame> = emptyList(),
     now: Instant = Instant.now(),
     localZone: ZoneId = ZoneId.systemDefault(),
 ): List<ScoreGame> {
     val unique = dedupeMatchups(matches)
     val scores = mutableListOf<ScoreGame>()
-    for ((league, items) in unique.groupBy { ScoreLeague.fromSiteLabel(it.leagueLabel()) }) {
-        val siteLabel = items.first().leagueLabel()
+    val listedGameIds = mutableSetOf<String>()
+    for ((siteLabel, items) in unique.groupBy { it.leagueLabel() }) {
+        val league = ScoreLeague.fromSiteLabel(siteLabel)
         val board = if (league == null) emptyList() else boards[league].orEmpty()
         val streamByGame = mutableMapOf<String, String>()
         val unmatched = mutableListOf<ScheduleItem>()
@@ -89,12 +100,23 @@ fun scoresForLiveDay(
             val game = findBoardGame(item, board)
             if (game == null) unmatched += item else streamByGame.putIfAbsent(game.id, item.pagePath)
         }
-        scores.addAll(
-            board.map { game ->
-                game.copy(leagueLabel = siteLabel, streamPagePath = streamByGame[game.id])
-            },
-        )
-        scores.addAll(unmatched.map { placeholderScore(it, now, localZone) })
+        if (streamByGame.isNotEmpty()) {
+            board.filter { listedGameIds.add(it.id) }.forEach { game ->
+                scores += game.copy(leagueLabel = siteLabel, streamPagePath = streamByGame[game.id])
+            }
+        }
+        for (item in unmatched) {
+            val soccerGame = if (ScoreLeague.looksLikeSoccer(siteLabel)) {
+                findBoardGame(item, allSoccer, allowOneTeam = false)
+            } else {
+                null
+            }
+            scores += if (soccerGame != null && listedGameIds.add(soccerGame.id)) {
+                soccerGame.copy(leagueLabel = siteLabel, streamPagePath = item.pagePath)
+            } else {
+                placeholderScore(item, now, localZone)
+            }
+        }
     }
     return scores.sortedBy { it.listRank() }
 }

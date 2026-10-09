@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import sc.fawanews.app.ui.TvFocusStyles
 import sc.fawanews.app.ui.theme.PlexColors
@@ -66,7 +68,7 @@ fun TvMenuItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .heightIn(min = 32.dp)
             .clip(shape)
             .background(rowBg)
             .focusable(interactionSource = interactionSource)
@@ -99,8 +101,8 @@ fun TvMenuItem(
         )
         Text(
             label,
-            modifier = Modifier.padding(start = 6.dp, end = 6.dp),
-                style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = when {
                 focused -> FontWeight.SemiBold
                 selected -> FontWeight.Medium
@@ -108,6 +110,7 @@ fun TvMenuItem(
             },
             color = textColor,
             maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

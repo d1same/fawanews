@@ -1,5 +1,6 @@
 package sc.fawanews.app.player
 
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import androidx.activity.compose.BackHandler
@@ -22,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,17 +93,51 @@ fun NativePlayer(
         onFullscreenChange(false)
     }
 
-    val exoPlayer = remember(preferTvQuality) {
-        FawaPlayerFactory.create(context, preferTvQuality = preferTvQuality)
+    var safeDecoding by remember { mutableStateOf(SafeDecoding.isOn(context)) }
+    val exoPlayer = remember(preferTvQuality, safeDecoding) {
+        FawaPlayerFactory.create(context, preferTvQuality = preferTvQuality, safeDecoding = safeDecoding)
     }
     val liveRecovery = remember(exoPlayer) { LiveRecovery(exoPlayer) }
     var playbackState by remember(exoPlayer) { mutableIntStateOf(exoPlayer.playbackState) }
+    var frozenCount by remember { mutableIntStateOf(0) }
+    var endlessBufferingCount by remember { mutableIntStateOf(0) }
+    val currentOnPlayerError by rememberUpdatedState(onPlayerError)
+    val watchdog = remember(exoPlayer) {
+        FreezeWatchdog(exoPlayer) { stall ->
+            Log.w("FawaPlayer", "Stall $stall (safeDecoding=$safeDecoding)")
+            when (stall) {
+                // A hardware decoder that froze once keeps freezing, so move straight to software.
+                Stall.FROZEN_PICTURE -> {
+                    frozenCount += 1
+                    when {
+                        !safeDecoding -> {
+                            SafeDecoding.turnOn(context)
+                            safeDecoding = true
+                        }
+                        frozenCount <= 2 -> exoPlayer.restartAtLiveEdge()
+                        else -> currentOnPlayerError()
+                    }
+                }
+                Stall.ENDLESS_BUFFERING -> {
+                    endlessBufferingCount += 1
+                    if (endlessBufferingCount <= 2) exoPlayer.restartAtLiveEdge() else currentOnPlayerError()
+                }
+                Stall.NONE -> Unit
+            }
+        }
+    }
 
     LaunchedEffect(streamUrl, playAttempt) {
+        frozenCount = 0
+        endlessBufferingCount = 0
+    }
+
+    LaunchedEffect(streamUrl, playAttempt, exoPlayer) {
         liveRecovery.reset()
         exoPlayer.setMediaItem(MediaItem.fromUri(streamUrl))
         exoPlayer.prepare()
         exoPlayer.playWhenReady = true
+        watchdog.start()
     }
 
     DisposableEffect(exoPlayer) {
@@ -129,6 +165,7 @@ fun NativePlayer(
         }
         exoPlayer.addListener(listener)
         onDispose {
+            watchdog.stop()
             liveRecovery.release()
             exoPlayer.removeListener(listener)
             exoPlayer.release()
@@ -290,6 +327,15 @@ private fun trimPlayerController(playerView: PlayerView, tv: Boolean) {
     if (tv) {
         playerView.findViewById<View>(MediaUiR.id.exo_fullscreen)?.visibility = View.GONE
     }
+}
+
+/** Stopping releases the decoder, so a hung hardware decoder gets a fresh start. */
+@OptIn(UnstableApi::class)
+private fun ExoPlayer.restartAtLiveEdge() {
+    stop()
+    seekToDefaultPosition()
+    prepare()
+    playWhenReady = true
 }
 
 private fun Format.qualityLabel(): String {

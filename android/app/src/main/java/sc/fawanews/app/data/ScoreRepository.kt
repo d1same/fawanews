@@ -39,13 +39,28 @@ class ScoreRepository(
         withContext(Dispatchers.IO) {
             val unique = dedupeMatchups(matches)
             val leagues = unique.mapNotNull { ScoreLeague.fromSiteLabel(it.leagueLabel()) }.distinct()
-            val boards = coroutineScope {
-                leagues.map { league ->
+            val wantsAllSoccer = unique.any { ScoreLeague.looksLikeSoccer(it.leagueLabel()) }
+            coroutineScope {
+                val boards = leagues.map { league ->
                     async { league to runCatching { fetchScores(league) }.getOrDefault(emptyList()) }
-                }.awaitAll().toMap()
+                }
+                val allSoccer = async {
+                    if (!wantsAllSoccer) {
+                        emptyList()
+                    } else {
+                        runCatching { fetchAllSoccer() }.getOrDefault(emptyList())
+                    }
+                }
+                scoresForLiveDay(unique, boards.awaitAll().toMap(), allSoccer.await())
             }
-            scoresForLiveDay(unique, boards)
         }
+
+    /** Every soccer league ESPN covers today, used for site leagues without their own board. */
+    private fun fetchAllSoccer(): List<ScoreGame> {
+        val url = "https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard" +
+            "?dates=${espnSportsDay()}&limit=500"
+        return parseScoreboard(getJson(url), "Soccer")
+    }
 
     private fun getJson(url: String): JsonObject {
         val request = Request.Builder()

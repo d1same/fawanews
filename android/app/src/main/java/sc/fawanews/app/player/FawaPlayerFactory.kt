@@ -14,6 +14,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.drm.DrmSessionManagerProvider
 import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -25,7 +26,7 @@ import sc.fawanews.app.data.StreamRequestHeaders
 @UnstableApi
 object FawaPlayerFactory {
 
-    fun create(context: Context, preferTvQuality: Boolean = false): ExoPlayer {
+    fun create(context: Context, preferTvQuality: Boolean = false, safeDecoding: Boolean = false): ExoPlayer {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(StreamRequestHeaders.USER_AGENT)
             .setAllowCrossProtocolRedirects(true)
@@ -78,6 +79,11 @@ object FawaPlayerFactory {
         // If a device's hardware decoder refuses a stream, try the next decoder instead of failing.
         val renderersFactory = DefaultRenderersFactory(context)
             .setEnableDecoderFallback(true)
+        if (safeDecoding) {
+            renderersFactory.setMediaCodecSelector { mimeType, secure, tunneling ->
+                MediaCodecUtil.getDecoderInfos(mimeType, secure, tunneling).sortedBy { !it.softwareOnly }
+            }
+        }
 
         return ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)

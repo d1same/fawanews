@@ -81,6 +81,52 @@ class TodayScoresTest {
     }
 
     @Test
+    fun countryLeaguesSharingANameAreNotMistakenForEnglandOrGermanyTopFlight() {
+        assertEquals(ScoreLeague.EPL, ScoreLeague.fromSiteLabel("Premier League"))
+        assertEquals(ScoreLeague.EPL, ScoreLeague.fromSiteLabel("English Premier League"))
+        assertEquals(ScoreLeague.RUSSIA, ScoreLeague.fromSiteLabel("Russia Premier League"))
+        assertNull(ScoreLeague.fromSiteLabel("Bosnia and Herzegovina Premier League"))
+        assertNull(ScoreLeague.fromSiteLabel("Saudi Premier League"))
+        assertEquals(ScoreLeague.BUNDESLIGA_2, ScoreLeague.fromSiteLabel("German 2 Bundesliga"))
+        assertEquals(ScoreLeague.BUNDESLIGA, ScoreLeague.fromSiteLabel("German Bundesliga"))
+        assertEquals(ScoreLeague.WOMEN_WORLD_CUP_QUALIFIERS, ScoreLeague.fromSiteLabel("Women World Cup"))
+        assertNull(ScoreLeague.fromSiteLabel("AFC Champions League"))
+    }
+
+    @Test
+    fun aBoardWithNoSiteGameIsNotShown() {
+        val epl = score("epl-1", "Arsenal", "Chelsea", "1", "0")
+        val day = scoresForLiveDay(
+            listOf(item("Velez Mostar vs Siroki Brijeg", "Premier League 17:00")),
+            mapOf(ScoreLeague.EPL to listOf(epl)),
+        )
+        assertEquals(listOf("Velez Mostar vs Siroki Brijeg"), day.map { it.id })
+    }
+
+    @Test
+    fun soccerWithoutALeagueBoardIsFoundOnTheAllSoccerBoard() {
+        val danish = score("dk-1", "Nordsjælland", "Odense BK", "2", "1")
+        val day = scoresForLiveDay(
+            listOf(
+                item("Nordsjaelland vs Odense", "Denmark SuperLiga 18:00"),
+                item("Pakistan vs Sri Lanka", "Cricket 10:00"),
+            ),
+            emptyMap(),
+            allSoccer = listOf(danish, score("pk", "Pakistan", "Sri Lanka", "0", "0")),
+        )
+        val nordsjaelland = day.first { it.leagueLabel == "Denmark SuperLiga" }
+        assertEquals("2", nordsjaelland.homeScore)
+        assertEquals("Nordsjaelland vs Odense", nordsjaelland.streamPagePath)
+        assertEquals("-", day.first { it.leagueLabel == "Cricket" }.homeScore)
+    }
+
+    @Test
+    fun allSoccerBoardNeedsBothTeams() {
+        val board = listOf(score("a", "Al Ahli", "Al Fateh", "1", "1"))
+        assertNull(findBoardGame(item("Al Ahli vs Al Wahda", "UAE League Cup 15:00"), board, allowOneTeam = false))
+    }
+
+    @Test
     fun languageCopiesCollapseToOneMatch() {
         val items = listOf(
             item("Argentina vs Benin --- ENG", "Friendly Match 00:00"),
